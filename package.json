@@ -1,0 +1,215 @@
+{
+	"name": "anthropic-for-copilot",
+	"displayName": "Anthropic Claude for Copilot Chat",
+	"description": "Use Anthropic Claude (Sonnet 5, Opus 5, Fable 5.1) with 1M context in Copilot Chat with native vision, custom API Key, custom Base URL, reasoning, and agent tools.",
+	"icon": "resources/icon.png",
+	"version": "1.0.0",
+	"publisher": "Vizards",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Vizards/anthropic-for-copilot"
+	},
+	"engines": {
+		"vscode": "^1.116.0",
+		"node": ">=24"
+	},
+	"categories": [
+		"AI",
+		"Chat",
+		"Programming Languages"
+	],
+	"keywords": [
+		"anthropic",
+		"claude",
+		"claude 5",
+		"sonnet 5",
+		"opus 5",
+		"fable 5.1",
+		"copilot",
+		"github copilot",
+		"copilot chat",
+		"vision",
+		"byok",
+		"language model",
+		"thinking",
+		"reasoning",
+		"ai",
+		"chat"
+	],
+	"activationEvents": [
+		"onUri",
+		"onStartupFinished"
+	],
+	"enabledApiProposals": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languageModelChatProviders": [
+			{
+				"vendor": "anthropic",
+				"displayName": "Anthropic"
+			}
+		],
+		"commands": [
+			{
+				"command": "anthropic-copilot.setApiKey",
+				"title": "%anthropic-copilot.command.setApiKey%"
+			},
+			{
+				"command": "anthropic-copilot.getApiKey",
+				"title": "%anthropic-copilot.command.getApiKey%"
+			},
+			{
+				"command": "anthropic-copilot.clearApiKey",
+				"title": "%anthropic-copilot.command.clearApiKey%"
+			},
+			{
+				"command": "anthropic-copilot.setVisionModel",
+				"title": "%anthropic-copilot.command.setVisionModel%"
+			},
+			{
+				"command": "anthropic-copilot.openSettings",
+				"title": "%anthropic-copilot.command.openSettings%"
+			},
+			{
+				"command": "anthropic-copilot.showLogs",
+				"title": "%anthropic-copilot.command.showLogs%"
+			},
+			{
+				"command": "anthropic-copilot.openRequestDumpsFolder",
+				"title": "%anthropic-copilot.command.openRequestDumpsFolder%"
+			}
+		],
+		"walkthroughs": [
+			{
+				"id": "anthropicGettingStarted",
+				"title": "%anthropic-copilot.walkthrough.title%",
+				"description": "%anthropic-copilot.walkthrough.description%",
+				"steps": [
+					{
+						"id": "setApiKey",
+						"title": "%anthropic-copilot.walkthrough.setApiKey.title%",
+						"description": "%anthropic-copilot.walkthrough.setApiKey.description%",
+						"media": {
+							"markdown": "resources/walkthrough/set-api-key.md"
+						},
+						"completionEvents": [
+							"onCommand:anthropic-copilot.setApiKey"
+						]
+					},
+					{
+						"id": "showModels",
+						"title": "%anthropic-copilot.walkthrough.showModels.title%",
+						"description": "%anthropic-copilot.walkthrough.showModels.description%",
+						"media": {
+							"markdown": "resources/walkthrough/show-models.md"
+						}
+					},
+					{
+						"id": "advancedSettings",
+						"title": "%anthropic-copilot.walkthrough.advancedSettings.title%",
+						"description": "%anthropic-copilot.walkthrough.advancedSettings.description%",
+						"media": {
+							"markdown": "resources/walkthrough/advanced-settings.md"
+						}
+					}
+				]
+			}
+		],
+		"configuration": {
+			"title": "%anthropic-copilot.config.title%",
+			"properties": {
+				"anthropic-copilot.baseUrl": {
+					"type": "string",
+					"default": "https://api.anthropic.com",
+					"description": "%anthropic-copilot.config.baseUrl.description%"
+				},
+				"anthropic-copilot.maxTokens": {
+					"type": "number",
+					"default": 0,
+					"minimum": 0,
+					"description": "%anthropic-copilot.config.maxTokens.description%"
+				},
+				"anthropic-copilot.experimental.stabilizeToolList": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "%anthropic-copilot.config.experimental.stabilizeToolList.description%",
+					"tags": [
+						"experimental"
+					]
+				},
+				"anthropic-copilot.modelIdOverrides": {
+					"type": "object",
+					"default": {
+						"claude-fable-5.1": "claude-fable-5.1",
+						"claude-opus-5": "claude-opus-5",
+						"claude-sonnet-5": "claude-sonnet-5"
+					},
+					"description": "%anthropic-copilot.config.modelIdOverrides.description%",
+					"additionalProperties": false,
+					"properties": {
+						"claude-fable-5.1": {
+							"type": "string",
+							"description": "%anthropic-copilot.config.modelIdOverrides.claude-fable-5.1.description%"
+						},
+						"claude-opus-5": {
+							"type": "string",
+							"description": "%anthropic-copilot.config.modelIdOverrides.claude-opus-5.description%"
+						},
+						"claude-sonnet-5": {
+							"type": "string",
+							"description": "%anthropic-copilot.config.modelIdOverrides.claude-sonnet-5.description%"
+						}
+					}
+				},
+				"anthropic-copilot.visionModel": {
+					"type": "string",
+					"default": "",
+					"tags": [
+						"advanced"
+					],
+					"markdownDescription": "%anthropic-copilot.config.visionModel.description%"
+				},
+				"anthropic-copilot.debugMode": {
+					"type": "string",
+					"default": "minimal",
+					"enum": [
+						"minimal",
+						"metadata",
+						"verbose"
+					],
+					"enumItemLabels": [
+						"%anthropic-copilot.config.debugMode.minimal.label%",
+						"%anthropic-copilot.config.debugMode.metadata.label%",
+						"%anthropic-copilot.config.debugMode.verbose.label%"
+					],
+					"markdownEnumDescriptions": [
+						"%anthropic-copilot.config.debugMode.minimal.description%",
+						"%anthropic-copilot.config.debugMode.metadata.description%",
+						"%anthropic-copilot.config.debugMode.verbose.description%"
+					],
+					"markdownDescription": "%anthropic-copilot.config.debugMode.description%"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"clean": "node -e \"require('node:fs').rmSync('out', { recursive: true, force: true, maxRetries: process.platform === 'win32' ? 10 : 0 })\"",
+		"vscode:prepublish": "npm run compile",
+		"compile": "npm run clean && tsc -p ./",
+		"watch": "npm run clean && tsc -watch -p ./",
+		"lint": "oxlint",
+		"format": "oxfmt --write src/",
+		"format:check": "oxfmt --check src/",
+		"package": "vsce package -o dist/"
+	},
+	"devDependencies": {
+		"@types/node": "^25.6.0",
+		"@types/vscode": "^1.116.0",
+		"@vscode/vsce": "^3.9.1",
+		"ovsx": "0.10.12",
+		"oxfmt": "^0.47.0",
+		"oxlint": "^1.62.0",
+		"typescript": "^6.0.3"
+	}
+}

@@ -1,0 +1,173 @@
+/**
+ * Shared types for the Anthropic Copilot extension.
+ */
+
+// ---- API request/response types for Anthropic Messages API ----
+
+export type ReasoningEffort = 'low' | 'high' | 'max';
+
+export interface AnthropicTextBlock {
+	type: 'text';
+	text: string;
+}
+
+export interface AnthropicImageBlock {
+	type: 'image';
+	source: {
+		type: 'base64';
+		media_type: string;
+		data: string;
+	};
+	// Compatibility property
+	image_url?: {
+		url: string;
+	};
+}
+
+export interface AnthropicToolUseBlock {
+	type: 'tool_use';
+	id: string;
+	name: string;
+	input: Record<string, unknown>;
+}
+
+export interface AnthropicToolResultBlock {
+	type: 'tool_result';
+	tool_use_id: string;
+	content: string | Array<AnthropicTextBlock | AnthropicImageBlock>;
+	is_error?: boolean;
+}
+
+export interface AnthropicThinkingBlock {
+	type: 'thinking';
+	thinking: string;
+	signature?: string;
+}
+
+export type AnthropicContentBlock =
+	| AnthropicTextBlock
+	| AnthropicImageBlock
+	| AnthropicToolUseBlock
+	| AnthropicToolResultBlock
+	| AnthropicThinkingBlock;
+
+export interface AnthropicMessage {
+	role: 'user' | 'assistant';
+	content: string | AnthropicContentBlock[];
+	// Optional compatibility fields for legacy debug logging
+	tool_call_id?: string;
+	tool_calls?: DeepSeekToolCall[];
+	reasoning_content?: string;
+}
+
+export interface AnthropicTool {
+	name: string;
+	description?: string;
+	input_schema: Record<string, unknown>;
+	// Optional compatibility field for legacy debug logging
+	function?: {
+		name: string;
+		description?: string;
+		parameters?: Record<string, unknown>;
+	};
+}
+
+export interface AnthropicUsage {
+	input_tokens: number;
+	output_tokens: number;
+	cache_read_input_tokens?: number;
+	cache_creation_input_tokens?: number;
+	// Compatibility fields
+	prompt_tokens?: number;
+	completion_tokens?: number;
+	total_tokens?: number;
+	prompt_cache_hit_tokens?: number;
+	prompt_cache_miss_tokens?: number;
+}
+
+export interface AnthropicThinkingConfig {
+	type: 'enabled';
+	budget_tokens: number;
+}
+
+export interface AnthropicRequest {
+	model: string;
+	messages: AnthropicMessage[];
+	system?: string | Array<{ type: 'text'; text: string }>;
+	max_tokens: number;
+	stream: boolean;
+	temperature?: number;
+	top_p?: number;
+	tools?: AnthropicTool[];
+	tool_choice?: { type: 'auto' | 'any' | 'tool'; name?: string } | 'none' | 'auto' | 'required';
+	thinking?: AnthropicThinkingConfig | { type: 'enabled' | 'disabled' };
+	reasoning_effort?: ReasoningEffort;
+}
+
+// Legacy aliases for internal engine & debug compatibility
+export type DeepSeekRequest = AnthropicRequest;
+export type DeepSeekMessage = AnthropicMessage;
+export type DeepSeekTool = AnthropicTool;
+export type DeepSeekUsage = AnthropicUsage;
+export type DeepSeekContentPart = AnthropicContentBlock;
+export interface DeepSeekToolCall {
+	id: string;
+	type: 'function';
+	function: {
+		name: string;
+		arguments: string;
+	};
+}
+
+// ---- Stream callbacks ----
+
+export interface StreamCallbacks {
+	onContent: (content: string) => void;
+	onThinking: (text: string) => void;
+	onToolCall: (toolCall: DeepSeekToolCall) => void;
+	onError: (error: Error) => void;
+	onDone: () => void;
+	onUsage?: (usage: AnthropicUsage) => void;
+}
+
+// ---- Model definitions ----
+
+export type PricingCurrency = 'USD' | 'CNY';
+
+export type PriceCategory = 'low' | 'medium' | 'high' | 'very_high';
+
+export interface ModelPricing {
+	cacheHitInput: number;
+	cacheMissInput: number;
+	output: number;
+}
+
+export interface ModelPricingSchedule {
+	offPeak: ModelPricing;
+	peak: ModelPricing;
+}
+
+export interface ThinkingCapability {
+	supportedEfforts: readonly ReasoningEffort[];
+	defaultEffort: ReasoningEffort;
+	canDisable: boolean;
+}
+
+export interface ModelDefinition {
+	id: string;
+	name: string;
+	family: string;
+	version: string;
+	detail: string;
+	maxInputTokens: number;
+	maxOutputTokens: number;
+	capabilities: {
+		toolCalling: boolean | number;
+		imageInput: boolean;
+		nativeImageInput?: boolean;
+		thinking: ThinkingCapability | false;
+	};
+	requiresThinkingParam: boolean;
+	pricing?: Readonly<Record<PricingCurrency, ModelPricingSchedule>>;
+	priceCategory?: PriceCategory;
+}
