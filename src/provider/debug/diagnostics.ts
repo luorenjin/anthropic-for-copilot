@@ -3,11 +3,11 @@ import vscode from 'vscode';
 import { getDebugLoggingEnabled } from '../../config';
 import { LANGUAGE_MODEL_CHAT_SYSTEM_ROLE } from '../../consts';
 import { logger } from '../../logger';
-import type { DeepSeekMessage, DeepSeekRequest, DeepSeekTool, DeepSeekUsage } from '../../types';
-import { deepSeekContentToText } from '../content';
+import type { AnthropicMessage, AnthropicRequest, AnthropicTool, AnthropicUsage } from '../../types';
+import { anthropicContentToText } from '../content';
 import { REPLAY_MARKER_MIME, parseFirstReplayMarker } from '../replay';
 import {
-	classifyDeepSeekRequest,
+	classifyAnthropicRequest,
 	formatModelFields,
 	formatRequestLogLine,
 	type RequestKind,
@@ -73,7 +73,7 @@ export interface CacheTraceStats {
 
 export interface CacheTraceMessageSummary {
 	index: number;
-	role: DeepSeekMessage['role'];
+	role: AnthropicMessage['role'];
 	hash: string;
 	contentHash: string;
 	contentHeadHash: string;
@@ -165,7 +165,7 @@ export interface CacheTraceSystemPromptChange {
 }
 
 export interface BeginCacheDiagnosticsOptions {
-	request: DeepSeekRequest;
+	request: AnthropicRequest;
 	segment: ConversationSegment;
 	requestKind?: RequestKind;
 	vscodeModelId: string;
@@ -189,7 +189,7 @@ export interface CacheDiagnosticsRun {
 	onDone(info: CacheDiagnosticsDoneInfo): void;
 	onCancellationTokenRequested(): void;
 	onReplayMarkerReport(info: ReplayMarkerReportInfo): void;
-	onUsage(usage: DeepSeekUsage, charsPerToken: number): void;
+	onUsage(usage: AnthropicUsage, charsPerToken: number): void;
 }
 
 export type ReplayMarkerReportStatus = 'reported' | 'failed' | 'skipped';
@@ -338,7 +338,7 @@ class DefaultCacheDiagnosticsRecorder implements CacheDiagnosticsRecorder {
 	beginRequest(options: BeginCacheDiagnosticsOptions): CacheDiagnosticsRun {
 		const requestKind =
 			options.requestKind ??
-			classifyDeepSeekRequest({
+			classifyAnthropicRequest({
 				request: options.request,
 				inputMessages: options.inputMessages,
 			});
@@ -410,7 +410,7 @@ class DefaultCacheDiagnosticsRecorder implements CacheDiagnosticsRecorder {
 					` thinkingEffort=${options.thinkingEffort}` +
 					` maxTokens=${options.maxTokens ?? 'api-default'}` +
 					` inputMessages=${options.inputMessages.length}` +
-					` deepseekMessages=${options.request.messages.length}`,
+					` anthropicMessages=${options.request.messages.length}`,
 			),
 		);
 		const hostPromptTrace = summarizeHostPromptTrace(options.inputMessages);
@@ -622,7 +622,7 @@ class ActiveCacheDiagnosticsRun implements CacheDiagnosticsRun {
 		this.recorder.rememberCacheTrace(this.snapshot);
 	}
 
-	onUsage(usage: DeepSeekUsage, charsPerToken: number): void {
+	onUsage(usage: AnthropicUsage, charsPerToken: number): void {
 		logUsage(usage, charsPerToken, this.usageLogContext, this.requestId);
 		if (this.resultComparison) {
 			const hitRate = getCacheHitRate(usage);
@@ -669,7 +669,7 @@ class NoopCacheDiagnosticsRun implements CacheDiagnosticsRun {
 
 	onReplayMarkerReport(_info: ReplayMarkerReportInfo): void {}
 
-	onUsage(usage: DeepSeekUsage, charsPerToken: number): void {
+	onUsage(usage: AnthropicUsage, charsPerToken: number): void {
 		logUsage(usage, charsPerToken, this.usageLogContext);
 	}
 }
@@ -801,7 +801,7 @@ function sanitizeLogValue(value: string): string {
 }
 
 function logUsage(
-	usage: DeepSeekUsage,
+	usage: AnthropicUsage,
 	charsPerToken: number,
 	context: UsageLogContext,
 	requestId?: number,
@@ -820,7 +820,7 @@ function logUsage(
 	);
 }
 
-function getCacheHitRate(usage: DeepSeekUsage): string {
+function getCacheHitRate(usage: AnthropicUsage): string {
 	const cacheHit = usage.prompt_cache_hit_tokens ?? 0;
 	const cacheMiss = usage.prompt_cache_miss_tokens ?? 0;
 	const cacheTotal = cacheHit + cacheMiss;
@@ -1238,9 +1238,9 @@ function getPartConstructorName(part: unknown): string {
 }
 
 export function createCacheTraceSnapshot(
-	request: DeepSeekRequest,
+	request: AnthropicRequest,
 	inputMessages: readonly vscode.LanguageModelChatRequestMessage[] = [],
-	requestKind: RequestKind = classifyDeepSeekRequest({ request, inputMessages }),
+	requestKind: RequestKind = classifyAnthropicRequest({ request, inputMessages }),
 ): CacheTraceSnapshot {
 	const toolsSerialized = stableStringify(request.tools ?? []);
 	const messageSummaries = summarizeMessages(request.messages);
@@ -1268,7 +1268,7 @@ export function createCacheTraceSnapshot(
 }
 
 function createRedactedComparisonInput(
-	request: DeepSeekRequest,
+	request: AnthropicRequest,
 	messageSummaries: CacheTraceMessageSummary[],
 	toolSummaries: CacheTraceToolSummary[],
 ): string {
@@ -1476,7 +1476,7 @@ export function getCacheTraceWarnings(snapshot: CacheTraceSnapshot): string[] {
 	}
 	if (snapshot.stats.missingToolReasoningMessages > 0) {
 		warnings.push(
-			`${snapshot.stats.missingToolReasoningMessages} assistant tool-call message(s) are missing marker-replayed reasoning_content; DeepSeek requires this in thinking tool-call histories and cache prefixes may drift.`,
+			`${snapshot.stats.missingToolReasoningMessages} assistant tool-call message(s) are missing marker-replayed reasoning_content; Anthropic requires this in thinking tool-call histories and cache prefixes may drift.`,
 		);
 	}
 	if (snapshot.stats.missingPostToolCallReasoningMessages > 0) {
@@ -1667,7 +1667,7 @@ function formatContentSectionSummary(summary: CacheTraceContentSectionSummary | 
 	);
 }
 
-function summarizeMessages(messages: DeepSeekMessage[]): CacheTraceMessageSummary[] {
+function summarizeMessages(messages: AnthropicMessage[]): CacheTraceMessageSummary[] {
 	const summaries: CacheTraceMessageSummary[] = [];
 	let followsToolResult = false;
 	for (const [index, message] of messages.entries()) {
@@ -1686,7 +1686,7 @@ function summarizeMessages(messages: DeepSeekMessage[]): CacheTraceMessageSummar
 }
 
 function summarizeMessage(
-	message: DeepSeekMessage,
+	message: AnthropicMessage,
 	index: number,
 	followsToolResult: boolean,
 ): CacheTraceMessageSummary {
@@ -1852,7 +1852,7 @@ function getSafeSystemPromptSectionLabel(line: string): string | undefined {
 	return SAFE_SYSTEM_PROMPT_TAGS.has(tag) ? `tag:${tag}` : 'tag:other';
 }
 
-function summarizeTools(tools: DeepSeekTool[]): CacheTraceToolSummary[] {
+function summarizeTools(tools: AnthropicTool[]): CacheTraceToolSummary[] {
 	return tools.map((tool, index) => ({
 		index,
 		name: tool.name || tool.function?.name || '',
@@ -1864,7 +1864,7 @@ function summarizeTools(tools: DeepSeekTool[]): CacheTraceToolSummary[] {
 	}));
 }
 
-function summarizeStats(messages: DeepSeekMessage[], toolCount: number): CacheTraceStats {
+function summarizeStats(messages: AnthropicMessage[], toolCount: number): CacheTraceStats {
 	let userMessages = 0;
 	let assistantMessages = 0;
 	let toolMessages = 0;
@@ -2047,9 +2047,9 @@ function summarizeStats(messages: DeepSeekMessage[], toolCount: number): CacheTr
 // Diagnostic summaries must stay readable without materializing raw image payloads.
 // Using sanitized image metadata keeps the trace compact and avoids dominating the
 // cache fingerprint with base64-heavy data URLs.
-function toDiagnosticContentText(content: DeepSeekMessage['content']): string {
+function toDiagnosticContentText(content: AnthropicMessage['content']): string {
 	if (typeof content !== 'object' || !Array.isArray(content)) {
-		return deepSeekContentToText(content, { separator: '\n' });
+		return anthropicContentToText(content, { separator: '\n' });
 	}
 
 	const parts: string[] = [];
@@ -2065,7 +2065,7 @@ function toDiagnosticContentText(content: DeepSeekMessage['content']): string {
 	return parts.join('\n');
 }
 
-function toDiagnosticMessageFingerprint(message: DeepSeekMessage): unknown {
+function toDiagnosticMessageFingerprint(message: AnthropicMessage): unknown {
 	if (typeof message.content !== 'object' || !Array.isArray(message.content)) {
 		return message;
 	}

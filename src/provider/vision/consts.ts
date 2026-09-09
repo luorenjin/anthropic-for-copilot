@@ -9,13 +9,13 @@
 export const MAX_TIMEOUT_MS = 2_147_483_647;
 
 /** Default model ID used for the vision proxy when auto-detection is enabled. */
-export const DEFAULT_VISION_MODEL_ID = 'deepseek-v4-flash-vision-exp';
+export const DEFAULT_VISION_MODEL_ID = 'claude-3-7-sonnet-20250219';
 
 /**
  * Prompt sent to the vision proxy model when describing image attachments
- * before forwarding them to text-only DeepSeek models.
+ * before forwarding them to text-only Anthropic models.
  *
- * Keep in sync with `deepseek-copilot.visionPrompt.default` in package.json.
+ * Keep in sync with `anthropic-copilot.visionPrompt.default` in package.json.
  */
 export const IMAGE_DESCRIPTION_PROMPT =
 	'Describe all image attachments in this message.\n\n' +

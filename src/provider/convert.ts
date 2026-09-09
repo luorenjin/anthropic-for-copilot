@@ -5,7 +5,7 @@ import type {
 	AnthropicMessage,
 	AnthropicRequest,
 	AnthropicTool,
-	DeepSeekToolCall,
+	AnthropicToolCall,
 } from '../types';
 import { parseFirstReplayMarker } from './replay';
 import {
@@ -50,7 +50,7 @@ export function convertMessages(
 		let textContent = '';
 		const contentBlocks: AnthropicContentBlock[] = [];
 		let thinkingContent = '';
-		const toolCalls: DeepSeekToolCall[] = [];
+		const toolCalls: AnthropicToolCall[] = [];
 		const toolResults: NormalizedToolResult[] = [];
 
 		for (const part of message.content) {

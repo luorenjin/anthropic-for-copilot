@@ -1,5 +1,5 @@
 export {
-	classifyDeepSeekRequest,
+	classifyAnthropicRequest,
 	classifyProviderRequest,
 	formatModelFields,
 	formatRequestLogLine,

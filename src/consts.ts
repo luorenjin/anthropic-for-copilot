@@ -45,10 +45,15 @@ export const WALKTHROUGH_ID = 'Luorj.anthropic-for-copilot#anthropicGettingStart
 
 // ---- Model registry ----
 
-/** Available Anthropic Claude models exposed through the language model provider. */
+/**
+ * Built-in default preset models.
+ * Note: Models are NOT locked to this array. Dynamic model discovery via `getAllModels()`
+ * and `getModelDefinition()` allows adding new custom models in settings or auto-handling
+ * any future Anthropic model without releasing a new extension version.
+ */
 export const MODELS: ModelDefinition[] = [
 	{
-		id: 'claude-fable-5.1',
+		id: 'claude-fable-5-1',
 		name: 'Fable 5.1',
 		family: 'claude',
 		version: 'v5.1',
@@ -139,5 +144,32 @@ export const MODELS: ModelDefinition[] = [
 			},
 		},
 		priceCategory: 'medium',
+	},
+	{
+		id: 'claude-haiku-4-5',
+		name: 'Haiku 4.5',
+		family: 'claude',
+		version: 'v4.5',
+		detail: 'Anthropic 4.5 Haiku lightweight high-speed model',
+		maxInputTokens: 200000,
+		maxOutputTokens: 8192,
+		capabilities: {
+			toolCalling: true,
+			imageInput: true,
+			nativeImageInput: true,
+			thinking: false,
+		},
+		requiresThinkingParam: false,
+		pricing: {
+			USD: {
+				offPeak: { cacheHitInput: 0.08, cacheMissInput: 0.8, output: 4.0 },
+				peak: { cacheHitInput: 0.08, cacheMissInput: 0.8, output: 4.0 },
+			},
+			CNY: {
+				offPeak: { cacheHitInput: 0.56, cacheMissInput: 5.6, output: 28.0 },
+				peak: { cacheHitInput: 0.56, cacheMissInput: 5.6, output: 28.0 },
+			},
+		},
+		priceCategory: 'low',
 	},
 ];

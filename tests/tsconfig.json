@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../out"
+  },
+  "include": [
+    "../src/**/*",
+    "../vscode.proposed.languageModelThinkingPart.d.ts",
+    "./**/*"
+  ]
+}

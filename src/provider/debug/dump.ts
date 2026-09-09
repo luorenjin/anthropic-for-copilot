@@ -7,11 +7,11 @@ import { getRequestDumpEnabled } from '../../config';
 import { LANGUAGE_MODEL_CHAT_SYSTEM_ROLE } from '../../consts';
 import { safeStringify, toWellFormedString } from '../../json';
 import { logger } from '../../logger';
-import type { DeepSeekMessage, DeepSeekRequest } from '../../types';
-import { deepSeekMessageToText } from '../content';
+import type { AnthropicMessage, AnthropicRequest } from '../../types';
+import { anthropicMessageToText } from '../content';
 import { parseReplayMarkerData, REPLAY_MARKER_MIME } from '../replay';
 import {
-	classifyDeepSeekRequest,
+	classifyAnthropicRequest,
 	classifyProviderRequest,
 	formatModelFields,
 	formatRequestLogLine,
@@ -28,7 +28,7 @@ let dumpWriteQueue: Promise<void> = Promise.resolve();
 const REQUEST_OBSERVATIONS_FILE = '_request-observations.jsonl';
 const HASH_WINDOW_CHARS = 2_048;
 
-type DumpEvent = 'provider-input' | 'deepseek-request';
+type DumpEvent = 'provider-input' | 'anthropic-request';
 type DumpStage = 'provider-input' | 'input' | 'resolved';
 
 interface DumpContext {
@@ -95,14 +95,14 @@ interface SystemPromptSummary extends CustomizationsSummary {
 	agentTagCount: number;
 }
 
-export interface DumpDeepSeekRequestOptions {
+export interface DumpAnthropicRequestOptions {
 	globalStorageUri: vscode.Uri;
 	segment: ConversationSegment;
 	requestKind?: RequestKind;
 	vscodeModelId: string;
 	isThinkingModel: boolean;
 	thinkingEffort: string;
-	maxTokens: number | undefined;
+	maxTokens?: number;
 	inputMessages: readonly vscode.LanguageModelChatRequestMessage[];
 	resolvedMessages: readonly vscode.LanguageModelChatRequestMessage[];
 	requestOptions: vscode.ProvideLanguageModelChatResponseOptions;
@@ -137,7 +137,7 @@ export function dumpProviderInput(options: DumpProviderInputOptions): void {
 	const context = createDumpContext(
 		options.globalStorageUri,
 		options.segment,
-		'deepseek-provider-input',
+		'anthropic-provider-input',
 		(providerInputDumpCounter += 1),
 		requestKind,
 	);
@@ -169,36 +169,37 @@ export function dumpProviderInput(options: DumpProviderInputOptions): void {
 }
 
 /**
- * Dump the FULL DeepSeek request payload (messages + tools) to disk verbatim
+ * Dump the FULL Anthropic request payload (messages + tools) to disk verbatim
  * when debugMode is `verbose`. No truncation, no hashing - you get the
- * exact JSON that will be sent to the DeepSeek API (minus the auth header).
+ * exact JSON that will be sent to the Anthropic API (minus the auth header).
  *
  * Files land under `<dump root>/<conversationSegmentId>/` so marker replay and
  * cache-lineage changes are easy to inspect across provider calls:
- *   deepseek-request-<timestamp>-NNNN.input.json     — VS Code input snapshot
- *   deepseek-request-<timestamp>-NNNN.resolved.json  — post-vision VS Code snapshot
- *   deepseek-request-<timestamp>-NNNN.json           — full request body
- *   deepseek-request-<timestamp>-NNNN.msg0.txt       — messages[0] content (system prompt)
+ *   anthropic-request-<timestamp>-NNNN.input.json     — VS Code input snapshot
+ *   anthropic-request-<timestamp>-NNNN.resolved.json  — post-vision VS Code snapshot
+ *   anthropic-request-<timestamp>-NNNN.json           — full request body
+ *   anthropic-request-<timestamp>-NNNN.msg0.txt       — system prompt content
  */
-export function dumpDeepSeekRequest(
-	request: DeepSeekRequest,
-	options: DumpDeepSeekRequestOptions,
+export function dumpAnthropicRequest(
+	request: AnthropicRequest,
+	options: DumpAnthropicRequestOptions,
 ): void {
 	if (!getRequestDumpEnabled()) return;
 
 	const requestKind =
 		options.requestKind ??
-		classifyDeepSeekRequest({
+		classifyAnthropicRequest({
 			request,
 			inputMessages: options.inputMessages,
 		});
 	const context = createDumpContext(
 		options.globalStorageUri,
 		options.segment,
-		'deepseek-request',
+		'anthropic-request',
 		(dumpCounter += 1),
 		requestKind,
 	);
+
 	const msg0 = request.messages[0];
 	const paths = createRequestDumpPaths(context, Boolean(msg0));
 	const toolSummary = summarizeTools(options.requestOptions.tools);
@@ -221,14 +222,14 @@ export function dumpDeepSeekRequest(
 		if (msg0 && paths.msg0) {
 			await writeTextFile(
 				paths.msg0,
-				deepSeekMessageToText(msg0, { includeImageUrls: true, separator: '\n' }),
+				anthropicMessageToText(msg0, { includeImageUrls: true, separator: '\n' }),
 			);
 		}
 
 		await writeDumpObservation(
 			options.globalStorageUri,
 			createDumpObservation({
-				event: 'deepseek-request',
+				event: 'anthropic-request',
 				context,
 				segment: options.segment,
 				paths,
@@ -337,9 +338,9 @@ function createProviderInputSnapshot(
 
 function createPipelineSnapshot(
 	stage: 'input' | 'resolved',
-	request: DeepSeekRequest,
+	request: AnthropicRequest,
 	messages: readonly vscode.LanguageModelChatRequestMessage[],
-	options: DumpDeepSeekRequestOptions,
+	options: DumpAnthropicRequestOptions,
 	context: DumpContext,
 ): object {
 	return createDumpSnapshot({
@@ -362,7 +363,7 @@ function createPipelineSnapshot(
 						stats: options.visionStats ?? null,
 					}
 				: undefined,
-		deepSeekPromptSummary: summarizeDeepSeekSystemPrompt(request.messages),
+		anthropicPromptSummary: summarizeAnthropicSystemPrompt(request.messages),
 		messages,
 		requestOptions: options.requestOptions,
 	});
@@ -375,7 +376,7 @@ function createDumpSnapshot(options: {
 	requestKind: RequestKind;
 	model: object;
 	vision?: object;
-	deepSeekPromptSummary?: SystemPromptSummary;
+	anthropicPromptSummary?: SystemPromptSummary;
 	messages: readonly vscode.LanguageModelChatRequestMessage[];
 	requestOptions: vscode.ProvideLanguageModelChatResponseOptions;
 }): object {
@@ -393,7 +394,7 @@ function createDumpSnapshot(options: {
 		hostSettings: summarizeHostSettings(),
 		vision: options.vision,
 		systemPromptSummary: summarizeVscodeSystemPrompt(options.messages),
-		deepSeekPromptSummary: options.deepSeekPromptSummary,
+		anthropicPromptSummary: options.anthropicPromptSummary,
 		messageStats: summarizeMessages(serializedMessages),
 		messages: serializedMessages,
 		toolStats: summarizeTools(options.requestOptions.tools),
@@ -669,9 +670,9 @@ function summarizeVscodeSystemPrompt(
 	);
 }
 
-function summarizeDeepSeekSystemPrompt(messages: readonly DeepSeekMessage[]): SystemPromptSummary {
+function summarizeAnthropicSystemPrompt(messages: readonly AnthropicMessage[]): SystemPromptSummary {
 	const message = messages[0];
-	const customizations = summarizeDeepSeekCustomizations(messages);
+	const customizations = summarizeAnthropicCustomizations(messages);
 	if (!message) {
 		return createSystemPromptSummary(null, null, '', customizations);
 	}
@@ -679,7 +680,7 @@ function summarizeDeepSeekSystemPrompt(messages: readonly DeepSeekMessage[]): Sy
 	return createSystemPromptSummary(
 		0,
 		message.role,
-		deepSeekMessageToText(message, { includeImageUrls: true, separator: '\n' }),
+		anthropicMessageToText(message, { includeImageUrls: true, separator: '\n' }),
 		customizations,
 	);
 }
@@ -730,15 +731,15 @@ function summarizeVscodeCustomizations(
 	};
 }
 
-function summarizeDeepSeekCustomizations(
-	messages: readonly DeepSeekMessage[],
+function summarizeAnthropicCustomizations(
+	messages: readonly AnthropicMessage[],
 ): CustomizationsSummary {
 	let customizationsUpdateCountInHistory = 0;
 	let latestUserMessageIndex: number | null = null;
 	let latestUserHasCustomizationsUpdate = false;
 
 	for (const [index, message] of messages.entries()) {
-		const text = deepSeekMessageToText(message, { includeImageUrls: true, separator: '\n' });
+		const text = anthropicMessageToText(message, { includeImageUrls: true, separator: '\n' });
 		customizationsUpdateCountInHistory += countLiteral(text, '<customizationsUpdate>');
 		if (message.role === 'user') {
 			latestUserMessageIndex = index;
@@ -1009,13 +1010,13 @@ function logProviderInputDump(
 }
 
 function logRequestDump(
-	request: DeepSeekRequest,
-	options: DumpDeepSeekRequestOptions,
+	request: AnthropicRequest,
+	options: DumpAnthropicRequestOptions,
 	paths: RequestDumpPaths,
 	requestJsonLength: number,
 	requestKind: RequestKind,
 ): void {
-	const systemPromptSummary = summarizeDeepSeekSystemPrompt(request.messages);
+	const systemPromptSummary = summarizeAnthropicSystemPrompt(request.messages);
 	logger.debug(
 		formatRequestLogLine(
 			requestKind,
@@ -1105,5 +1106,5 @@ function getRequestDumpBaseRootUri(globalStorageUri: vscode.Uri): vscode.Uri {
 		return vscode.Uri.joinPath(globalStorageUri, 'request-dumps');
 	}
 
-	return vscode.Uri.file(join(tmpdir(), 'deepseek-request-dumps'));
+	return vscode.Uri.file(join(tmpdir(), 'anthropic-request-dumps'));
 }

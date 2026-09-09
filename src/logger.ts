@@ -4,7 +4,7 @@ let channel: vscode.LogOutputChannel | undefined;
 
 function getChannel(): vscode.LogOutputChannel {
 	if (!channel) {
-		channel = vscode.window.createOutputChannel('DeepSeek', { log: true });
+		channel = vscode.window.createOutputChannel('Anthropic', { log: true });
 	}
 	return channel;
 }
@@ -24,13 +24,51 @@ function formatMessage(args: unknown[]): string {
 }
 
 export const logger = {
-	info: (...args: unknown[]) => getChannel().info(formatMessage(args)),
-	warn: (...args: unknown[]) => getChannel().warn(formatMessage(args)),
-	error: (...args: unknown[]) => getChannel().error(formatMessage(args)),
-	debug: (...args: unknown[]) => getChannel().debug(formatMessage(args)),
-	show: () => getChannel().show(),
+	info: (...args: unknown[]) => {
+		try {
+			if (typeof vscode.window?.createOutputChannel === 'function') {
+				getChannel().info(formatMessage(args));
+				return;
+			}
+		} catch {}
+		console.log('[INFO]', ...args);
+	},
+	warn: (...args: unknown[]) => {
+		try {
+			if (typeof vscode.window?.createOutputChannel === 'function') {
+				getChannel().warn(formatMessage(args));
+				return;
+			}
+		} catch {}
+		console.warn('[WARN]', ...args);
+	},
+	error: (...args: unknown[]) => {
+		try {
+			if (typeof vscode.window?.createOutputChannel === 'function') {
+				getChannel().error(formatMessage(args));
+				return;
+			}
+		} catch {}
+		console.error('[ERROR]', ...args);
+	},
+	debug: (...args: unknown[]) => {
+		try {
+			if (typeof vscode.window?.createOutputChannel === 'function') {
+				getChannel().debug(formatMessage(args));
+				return;
+			}
+		} catch {}
+		console.debug('[DEBUG]', ...args);
+	},
+	show: () => {
+		try {
+			if (typeof vscode.window?.createOutputChannel === 'function') getChannel().show();
+		} catch {}
+	},
 	dispose: () => {
-		channel?.dispose();
+		try {
+			channel?.dispose();
+		} catch {}
 		channel = undefined;
 	},
 };

@@ -56,7 +56,7 @@ export interface AnthropicMessage {
 	content: string | AnthropicContentBlock[];
 	// Optional compatibility fields for legacy debug logging
 	tool_call_id?: string;
-	tool_calls?: DeepSeekToolCall[];
+	tool_calls?: AnthropicToolCall[];
 	reasoning_content?: string;
 }
 
@@ -104,13 +104,7 @@ export interface AnthropicRequest {
 	reasoning_effort?: ReasoningEffort;
 }
 
-// Legacy aliases for internal engine & debug compatibility
-export type DeepSeekRequest = AnthropicRequest;
-export type DeepSeekMessage = AnthropicMessage;
-export type DeepSeekTool = AnthropicTool;
-export type DeepSeekUsage = AnthropicUsage;
-export type DeepSeekContentPart = AnthropicContentBlock;
-export interface DeepSeekToolCall {
+export interface AnthropicToolCall {
 	id: string;
 	type: 'function';
 	function: {
@@ -119,12 +113,13 @@ export interface DeepSeekToolCall {
 	};
 }
 
+
 // ---- Stream callbacks ----
 
 export interface StreamCallbacks {
 	onContent: (content: string) => void;
 	onThinking: (text: string) => void;
-	onToolCall: (toolCall: DeepSeekToolCall) => void;
+	onToolCall: (toolCall: AnthropicToolCall) => void;
 	onError: (error: Error) => void;
 	onDone: () => void;
 	onUsage?: (usage: AnthropicUsage) => void;

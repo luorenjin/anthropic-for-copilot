@@ -1,5 +1,5 @@
 /**
- * DeepSeek V4 peak/off-peak billing windows.
+ * Anthropic peak/off-peak billing windows.
  *
  * The official pricing page defines peak hours as 01:00-04:00 and
  * 06:00-10:00 UTC, Monday through Friday. The page currently expresses both
@@ -67,7 +67,7 @@ function getNextTransitionAt(now: Date): Date {
 		}
 	}
 
-	throw new Error('Unable to find the next DeepSeek pricing transition');
+	throw new Error('Unable to find the next Anthropic pricing transition');
 }
 
 export class PricingRefreshScheduler {

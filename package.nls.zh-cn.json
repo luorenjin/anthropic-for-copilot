@@ -15,6 +15,7 @@
 	"anthropic-copilot.walkthrough.advancedSettings.title": "试用高级设置",
 	"anthropic-copilot.walkthrough.advancedSettings.description": "在设置中自定义 Base URL、模型 ID 映射等。\n[打开设置](command:anthropic-copilot.openSettings)",
 	"anthropic-copilot.config.title": "Anthropic Copilot",
+	"anthropic-copilot.config.apiKey.description": "Anthropic API Key 或 Auth Token（也可以通过命令面板快捷命令进行安全存储）。",
 	"anthropic-copilot.config.baseUrl.description": "Anthropic API Base URL。默认为 https://api.anthropic.com，支持自定义代理/中转站 URL。",
 	"anthropic-copilot.config.maxTokens.description": "单次请求最大输出 Token 数，0 表示使用 API 默认值。",
 	"anthropic-copilot.config.experimental.stabilizeToolList.description": "**实验性**: 预激活可用工具列表。",
@@ -29,5 +30,8 @@
 	"anthropic-copilot.config.modelIdOverrides.claude-fable-5.1.description": "Fable 5.1 的 API 模型 ID",
 	"anthropic-copilot.config.modelIdOverrides.claude-opus-5.description": "Opus 5 的 API 模型 ID",
 	"anthropic-copilot.config.modelIdOverrides.claude-sonnet-5.description": "Sonnet 5 的 API 模型 ID",
-	"anthropic-copilot.config.visionModel.description": "Vision Proxy 配置。"
+	"anthropic-copilot.config.modelIdOverrides.claude-haiku-4.5.description": "Haiku 4.5 的 API 模型 ID",
+	"anthropic-copilot.config.customModels.description": "定义更多自定义 Anthropic/Claude 模型及其显示名称。",
+	"anthropic-copilot.config.visionModel.description": "Vision Proxy 配置。",
+	"anthropic-copilot.config.customHeaders.description": "发送到 Anthropic API 的自定义 HTTP 请求头（如 LiteLLM / CC-Switch 中转站需要的 x-litellm-api-key 等）。"
 }

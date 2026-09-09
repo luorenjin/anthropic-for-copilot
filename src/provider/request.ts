@@ -1,19 +1,18 @@
 import vscode from 'vscode';
 import { AuthManager } from '../auth';
 import { AnthropicClient } from '../client';
-import { getApiModelId, getBaseUrl, getMaxTokens } from '../config';
-import { MODELS } from '../consts';
+import { getApiModelId, getBaseUrl, getModelDefinition, getMaxTokens } from '../config';
 import { t } from '../i18n';
 import type { AnthropicRequest } from '../types';
 import { convertMessages, convertTools, countMessageChars } from './convert';
 import {
-	dumpDeepSeekRequest,
+	dumpAnthropicRequest,
 	type CacheDiagnosticsRecorder,
 	type CacheDiagnosticsRun,
 } from './debug';
 import { getConfiguredThinkingEffort, type ModelConfigurationOptions } from './models';
 import type { ReplayMarkerMetadata } from './replay';
-import { classifyDeepSeekRequest, type RequestKind } from './routing';
+import { classifyAnthropicRequest, type RequestKind } from './routing';
 import type { ConversationSegment } from './segment';
 import {
 	finalizeVisionResolutionStats,
@@ -66,7 +65,7 @@ export async function prepareChatRequest({
 
 	const baseUrl = getBaseUrl();
 	const client = new AnthropicClient(baseUrl, apiKey);
-	const modelDef = MODELS.find((m) => m.id === modelInfo.id);
+	const modelDef = getModelDefinition(modelInfo.id);
 	const thinkingCapability = modelDef?.capabilities.thinking;
 	const isThinkingModel = Boolean(thinkingCapability);
 	const nativeImageInput = modelDef?.capabilities.nativeImageInput === true;
@@ -119,12 +118,12 @@ export async function prepareChatRequest({
 			: {}),
 	};
 
-	const requestKind = classifyDeepSeekRequest({
+	const requestKind = classifyAnthropicRequest({
 		request,
 		inputMessages: messages,
 	});
 
-	dumpDeepSeekRequest(request, {
+	dumpAnthropicRequest(request, {
 		globalStorageUri,
 		segment,
 		requestKind,

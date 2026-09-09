@@ -1,11 +1,11 @@
-import { isOfficialDeepSeekBaseUrl } from '../../endpoint';
+import { isOfficialAnthropicBaseUrl } from '../../endpoint';
 import { t } from '../../i18n';
 import { safeStringify } from '../../json';
-import type { DeepSeekMessage } from '../../types';
+import type { AnthropicMessage } from '../../types';
 import { API_PROVIDER_HTTP_ERROR_LINKS, MAX_DIAGNOSTIC_FIELD_LENGTH } from '../consts';
 import type {
+	AnthropicRequestErrorKind,
 	ApiProviderId,
-	DeepSeekRequestErrorKind,
 	ErrorActionLink,
 	ErrorActionUrls,
 	HttpErrorLinkDefinition,
@@ -13,7 +13,7 @@ import type {
 	RequestErrorContext,
 } from '../types';
 import { getNetworkErrorCauseInfo, getNetworkErrorCode, getNetworkErrorMessage } from './network';
-export type { DeepSeekRequestErrorKind, ErrorActionUrls } from '../types';
+export type { AnthropicRequestErrorKind, ErrorActionUrls } from '../types';
 
 const errorActionUrlStore = (() => {
 	let current: ErrorActionUrls = {};
@@ -30,8 +30,8 @@ export function setErrorActionUrl(key: keyof ErrorActionUrls, url: string): void
 	errorActionUrlStore.set(key, url);
 }
 
-export class DeepSeekRequestError extends Error {
-	readonly kind: DeepSeekRequestErrorKind;
+export class AnthropicRequestError extends Error {
+	readonly kind: AnthropicRequestErrorKind;
 	readonly userSummary: string;
 	readonly diagnosticMessage: string;
 	readonly baseUrl?: string;
@@ -41,7 +41,7 @@ export class DeepSeekRequestError extends Error {
 	constructor(options: {
 		message: string;
 		userSummary?: string;
-		kind: DeepSeekRequestErrorKind;
+		kind: AnthropicRequestErrorKind;
 		diagnosticMessage?: string;
 		baseUrl?: string;
 		status?: number;
@@ -49,7 +49,7 @@ export class DeepSeekRequestError extends Error {
 		cause?: unknown;
 	}) {
 		super(options.message, { cause: options.cause });
-		this.name = 'DeepSeekRequestError';
+		this.name = 'AnthropicRequestError';
 		this.kind = options.kind;
 		this.userSummary = options.userSummary ?? options.message;
 		this.diagnosticMessage = options.diagnosticMessage ?? options.message;
@@ -59,30 +59,34 @@ export class DeepSeekRequestError extends Error {
 	}
 }
 
-export async function createHttpError(
-	response: Response,
-	context: RequestErrorContext,
-): Promise<DeepSeekRequestError> {
-	const { baseUrl } = context;
-	const responseText = await response.text();
-	const serverMessage = extractServerMessage(responseText);
-	const userSummary = getHttpErrorMessage(
-		response.status,
-		getCreateApiKeyUrl(response.status, baseUrl),
-	);
 
-	return new DeepSeekRequestError({
-		message: `DeepSeek API request failed with HTTP ${response.status}`,
+
+export function createHttpErrorFromStatus(
+	status: number,
+	statusText: string,
+	responseText: string,
+	context: RequestErrorContext,
+): AnthropicRequestError {
+	const { baseUrl } = context;
+	const serverMessage = extractServerMessage(responseText);
+	const baseSummary = getHttpErrorMessage(
+		status,
+		getCreateApiKeyUrl(status, baseUrl),
+	);
+	const userSummary = serverMessage ? `${baseSummary} (${serverMessage})` : baseSummary;
+
+	return new AnthropicRequestError({
+		message: `Anthropic API request failed with HTTP ${status}`,
 		userSummary,
 		kind: 'http',
 		baseUrl,
-		status: response.status,
-		code: `HTTP_${response.status}`,
+		status,
+		code: `HTTP_${status}`,
 		diagnosticMessage: joinDiagnosticParts(
 			`kind=http`,
-			`status=${response.status}`,
+			`status=${status}`,
 			getRequestDiagnosticMessage(context),
-			`statusText=${safeStringify(response.statusText || 'unknown')}`,
+			`statusText=${safeStringify(statusText || 'unknown')}`,
 			serverMessage ? `serverMessage=${safeStringify(serverMessage)}` : undefined,
 			responseText && responseText !== serverMessage
 				? `body=${safeStringify(truncateSingleLine(responseText))}`
@@ -91,15 +95,40 @@ export async function createHttpError(
 	});
 }
 
+export async function createHttpError(
+	response: Response,
+	context: RequestErrorContext,
+): Promise<AnthropicRequestError> {
+	const responseText = await response.text();
+	return createHttpErrorFromStatus(response.status, response.statusText, responseText, context);
+}
+
 export function normalizeRequestError(error: unknown, context: RequestErrorContext): Error {
-	if (error instanceof DeepSeekRequestError) {
+	if (error instanceof AnthropicRequestError) {
 		return error;
+	}
+
+	if (
+		error &&
+		typeof error === 'object' &&
+		'status' in error &&
+		typeof (error as { status: unknown }).status === 'number'
+	) {
+		const errObj = error as Record<string, unknown>;
+		const status = errObj.status as number;
+		const responseText = safeStringify(errObj.error || errObj.message || error);
+		return createHttpErrorFromStatus(
+			status,
+			typeof errObj.name === 'string' ? errObj.name : 'APIError',
+			responseText,
+			context,
+		);
 	}
 
 	if (!(error instanceof Error)) {
 		const value = truncateSingleLine(String(error));
-		return new DeepSeekRequestError({
-			message: `DeepSeek request failed with a non-Error value: ${value}`,
+		return new AnthropicRequestError({
+			message: `Anthropic request failed with a non-Error value: ${value}`,
 			userSummary: t('error.unknown', value),
 			kind: 'unknown',
 			baseUrl: context.baseUrl,
@@ -118,10 +147,10 @@ export function normalizeRequestError(error: unknown, context: RequestErrorConte
 
 	const code = getNetworkErrorCode(causeInfo);
 	const userSummary = getNetworkErrorMessage(code);
-	const enhanced = new DeepSeekRequestError({
+	const enhanced = new AnthropicRequestError({
 		message: code
-			? `DeepSeek request failed due to network error ${code}`
-			: 'DeepSeek request failed due to a network error',
+			? `Anthropic request failed due to network error ${code}`
+			: 'Anthropic request failed due to a network error',
 		userSummary,
 		kind: 'network',
 		baseUrl: context.baseUrl,
@@ -141,7 +170,7 @@ export function normalizeRequestError(error: unknown, context: RequestErrorConte
 
 export function formatRequestError(error: Error): string {
 	const diagnosticMessage = joinDiagnosticParts(
-		error instanceof DeepSeekRequestError
+		error instanceof AnthropicRequestError
 			? error.diagnosticMessage
 			: `message=${safeStringify(error.message)}`,
 	);
@@ -150,7 +179,7 @@ export function formatRequestError(error: Error): string {
 
 export function createUserFacingError(error: Error): Error {
 	const message =
-		error instanceof DeepSeekRequestError
+		error instanceof AnthropicRequestError
 			? formatMarkdownMessage(error.userSummary, getErrorActions(error, errorActionUrlStore.get()))
 			: error.message;
 	const displayError = new Error(message);
@@ -193,6 +222,7 @@ function extractServerMessage(responseText: string): string | undefined {
 		const message =
 			getStringProperty(error, 'message') ??
 			getStringProperty(parsed, 'message') ??
+			getStringProperty(parsed, 'detail') ??
 			(typeof error === 'string' ? error : undefined);
 		return message ? truncateSingleLine(message) : undefined;
 	} catch {
@@ -227,7 +257,7 @@ function formatActionLink(action: ErrorActionLink): string {
 }
 
 function getErrorActions(
-	error: DeepSeekRequestError,
+	error: AnthropicRequestError,
 	actionUrls: ErrorActionUrls,
 ): readonly ErrorActionLink[] {
 	if (error.kind === 'http' && error.status !== undefined && error.baseUrl) {
@@ -284,8 +314,31 @@ function getDiagnosticErrorActions(actionUrls: ErrorActionUrls): readonly ErrorA
 	return url ? [{ labelKey: 'error.action.viewDetails', url }] : [];
 }
 
+export function sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
+	const sanitized: Record<string, string> = {};
+	for (const [key, value] of Object.entries(headers)) {
+		const lowerKey = key.toLowerCase();
+		if (lowerKey === 'x-api-key' || lowerKey === 'authorization') {
+			sanitized[key] = value ? (value.length > 8 ? `${value.slice(0, 6)}***` : '***') : '';
+		} else if (
+			lowerKey.includes('key') ||
+			lowerKey.includes('secret') ||
+			lowerKey.includes('password') ||
+			lowerKey.includes('token')
+		) {
+			sanitized[key] = value ? (value.length > 6 ? `${value.slice(0, 3)}***` : '***') : '***';
+		} else {
+			sanitized[key] = value;
+		}
+	}
+	return sanitized;
+}
+
 function getRequestDiagnosticMessage(context: RequestErrorContext): string {
-	const { request } = context;
+	const { request, headers, customHeaders } = context;
+	const sanitizedHeaders = headers ? sanitizeHeaders(headers) : undefined;
+	const sanitizedCustomHeaders = customHeaders ? sanitizeHeaders(customHeaders) : undefined;
+
 	return joinDiagnosticParts(
 		`baseUrl=${safeStringify(context.baseUrl)}`,
 		`model=${safeStringify(request.model)}`,
@@ -302,6 +355,10 @@ function getRequestDiagnosticMessage(context: RequestErrorContext): string {
 		`messageCount=${request.messages.length}`,
 		`messageChars=${request.messages.reduce((total, message) => total + getContentChars(message.content), 0)}`,
 		`imageParts=${request.messages.reduce((total, message) => total + countImageParts(message.content), 0)}`,
+		sanitizedCustomHeaders && Object.keys(sanitizedCustomHeaders).length > 0
+			? `customHeaders=${safeStringify(sanitizedCustomHeaders)}`
+			: `customHeaders={none}`,
+		sanitizedHeaders ? `requestHeaders=${safeStringify(sanitizedHeaders)}` : undefined,
 	);
 }
 
@@ -311,7 +368,7 @@ function getRequestDiagnosticMessage(context: RequestErrorContext): string {
  * diagnostic depend on the object representation rather than payload content.
  * Image URL characters are included because data URLs can dominate request size.
  */
-function getContentChars(content: DeepSeekMessage['content']): number {
+function getContentChars(content: AnthropicMessage['content']): number {
 	if (typeof content === 'string') {
 		return content.length;
 	}
@@ -327,7 +384,7 @@ function getContentChars(content: DeepSeekMessage['content']): number {
 	);
 }
 
-function countImageParts(content: DeepSeekMessage['content']): number {
+function countImageParts(content: AnthropicMessage['content']): number {
 	if (typeof content === 'string') {
 		return 0;
 	}
@@ -350,7 +407,7 @@ function escapeBoldText(value: string): string {
 }
 
 function identifyApiProvider(baseUrl: string): ApiProviderId | undefined {
-	return isOfficialDeepSeekBaseUrl(baseUrl) ? 'deepseek' : undefined;
+	return isOfficialAnthropicBaseUrl(baseUrl) ? 'anthropic' : undefined;
 }
 
 function getHttpErrorLinkStatusKey(status: number): HttpErrorLinkStatusKey | undefined {

@@ -1,8 +1,7 @@
 import vscode from 'vscode';
 import { AuthManager } from '../auth';
-import { getBaseUrl, getStabilizeToolListEnabled } from '../config';
-import { MODELS } from '../consts';
-import { isOfficialDeepSeekBaseUrl, normalizeBaseUrl } from '../endpoint';
+import { getAllModels, getBaseUrl, getStabilizeToolListEnabled } from '../config';
+import { isOfficialAnthropicBaseUrl, normalizeBaseUrl } from '../endpoint';
 import { t } from '../i18n';
 import { logger } from '../logger';
 import { createCacheDiagnosticsRecorder, dumpProviderInput } from './debug';
@@ -55,7 +54,9 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 			vscode.workspace.onDidChangeConfiguration((e) => {
 				if (
 					e.affectsConfiguration('anthropic-copilot.apiKey') ||
-					e.affectsConfiguration('anthropic-copilot.baseUrl')
+					e.affectsConfiguration('anthropic-copilot.baseUrl') ||
+					e.affectsConfiguration('anthropic-copilot.modelIdOverrides') ||
+					e.affectsConfiguration('anthropic-copilot.customModels')
 				) {
 					this.invalidateCurrencyAndRefreshModels();
 				}
@@ -131,7 +132,7 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 
 		const hasKey = await this.authManager.hasApiKey();
 		const pricingCurrency = this.balanceCurrencyResolver.getDisplayCurrency();
-		const showPricingNotice = isOfficialDeepSeekBaseUrl(normalizeBaseUrl(getBaseUrl()));
+		const showPricingNotice = isOfficialAnthropicBaseUrl(normalizeBaseUrl(getBaseUrl()));
 		const now = new Date();
 		if (hasKey) {
 			this.balanceCurrencyResolver.refreshInBackground();
@@ -139,7 +140,7 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 
 		const seenIds = new Set<string>();
 		const result: vscode.LanguageModelChatInformation[] = [];
-		for (const model of MODELS) {
+		for (const model of getAllModels()) {
 			if (seenIds.has(model.id)) {
 				continue;
 			}
@@ -217,8 +218,6 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 		return estimateTokenCount(text, this.charsPerToken);
 	}
 }
-
-export { AnthropicChatProvider as DeepSeekChatProvider };
 
 function joinInitialResponseNotices(...notices: (string | undefined)[]): string | undefined {
 	const joined = notices.filter((notice) => notice && notice.trim().length > 0).join('\n');

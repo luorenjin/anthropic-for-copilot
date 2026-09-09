@@ -1,6 +1,6 @@
 export const OFFICIAL_ANTHROPIC_API_HOST = 'api.anthropic.com';
 
-export function isOfficialDeepSeekBaseUrl(baseUrl: string): boolean {
+export function isOfficialAnthropicBaseUrl(baseUrl: string): boolean {
 	try {
 		return new URL(baseUrl).hostname.toLowerCase() === OFFICIAL_ANTHROPIC_API_HOST;
 	} catch {

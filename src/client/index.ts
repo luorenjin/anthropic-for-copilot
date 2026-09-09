@@ -1,9 +1,9 @@
-export { AnthropicClient, DeepSeekClient } from './core';
+export { AnthropicClient } from './core';
 export {
 	createHttpError,
 	createUserFacingError,
-	DeepSeekRequestError,
+	AnthropicRequestError,
 	normalizeRequestError,
 	setErrorActionUrl,
 } from './error';
-export type { DeepSeekRequestErrorKind, ErrorActionUrls } from './types';
+export type { AnthropicRequestErrorKind, ErrorActionUrls } from './types';

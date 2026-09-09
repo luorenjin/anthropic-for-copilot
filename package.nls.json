@@ -15,6 +15,7 @@
 	"anthropic-copilot.walkthrough.advancedSettings.title": "Try advanced settings",
 	"anthropic-copilot.walkthrough.advancedSettings.description": "Customize providers, Base URL, and model names in the extension settings.\n[Open settings](command:anthropic-copilot.openSettings)",
 	"anthropic-copilot.config.title": "Anthropic Copilot",
+	"anthropic-copilot.config.apiKey.description": "Anthropic API Key or Auth Token. (Alternatively set via Command Palette or SecretStorage).",
 	"anthropic-copilot.config.baseUrl.description": "Anthropic API base URL. Defaults to https://api.anthropic.com.",
 	"anthropic-copilot.config.maxTokens.description": "Maximum number of output tokens per request. Set to 0 to use API default.",
 	"anthropic-copilot.config.experimental.stabilizeToolList.description": "**Experimental**: Pre-activate available tools list to stabilize tool schemas across turns.",
@@ -29,5 +30,8 @@
 	"anthropic-copilot.config.modelIdOverrides.claude-fable-5.1.description": "API model ID for Fable 5.1",
 	"anthropic-copilot.config.modelIdOverrides.claude-opus-5.description": "API model ID for Opus 5",
 	"anthropic-copilot.config.modelIdOverrides.claude-sonnet-5.description": "API model ID for Sonnet 5",
-	"anthropic-copilot.config.visionModel.description": "Vision Proxy used when native image input is unavailable."
+	"anthropic-copilot.config.modelIdOverrides.claude-haiku-4.5.description": "API model ID for Haiku 4.5",
+	"anthropic-copilot.config.customModels.description": "Define additional custom Anthropic/Claude models with custom display names to expose in Copilot Chat.",
+	"anthropic-copilot.config.visionModel.description": "Vision Proxy used when native image input is unavailable.",
+	"anthropic-copilot.config.customHeaders.description": "Custom HTTP headers included with every Anthropic API request (e.g. for proxy gateways like LiteLLM/CC-Switch)."
 }

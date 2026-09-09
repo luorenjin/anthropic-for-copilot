@@ -1,10 +1,10 @@
-import { MODELS } from '../../consts';
+import { getAllModels } from '../../config';
 
 export const REPLAY_MARKER_MIME = 'stateful_marker';
 export const REPLAY_MARKER_WRITER_ID = 'anthropic-copilot';
 export const REPLAY_MARKER_PREFIXES = new Set([
 	REPLAY_MARKER_WRITER_ID,
-	...MODELS.map((model) => model.id),
+	...getAllModels().map((model) => model.id),
 ]);
 export const ENCODED_JSON_MARKER_PREFIX = 'json:';
 export const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;

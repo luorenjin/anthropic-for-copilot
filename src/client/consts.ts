@@ -12,32 +12,20 @@ export const API_PROVIDER_HTTP_ERROR_LINKS: Readonly<
 	Record<HttpErrorLinkStatusKey, Readonly<Partial<Record<ApiProviderId, HttpErrorLinkDefinition>>>>
 > = {
 	401: {
-		deepseek: {
-			labelKey: 'error.action.createApiKey',
-			url: EXTERNAL_URLS.anthropic.apiKeys,
-		},
 		anthropic: {
 			labelKey: 'error.action.createApiKey',
 			url: EXTERNAL_URLS.anthropic.apiKeys,
 		},
 	},
 	402: {
-		deepseek: {
-			labelKey: 'error.action.viewUsage',
-			url: EXTERNAL_URLS.anthropic.usage,
-		},
 		anthropic: {
 			labelKey: 'error.action.viewUsage',
 			url: EXTERNAL_URLS.anthropic.usage,
 		},
 	},
 	'5xx': {
-		deepseek: {
-			labelKey: 'error.action.checkDeepSeekStatus',
-			url: EXTERNAL_URLS.anthropic.status,
-		},
 		anthropic: {
-			labelKey: 'error.action.checkDeepSeekStatus',
+			labelKey: 'error.action.checkAnthropicStatus',
 			url: EXTERNAL_URLS.anthropic.status,
 		},
 	},

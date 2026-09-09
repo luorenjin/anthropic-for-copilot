@@ -1,13 +1,13 @@
 import type { AnthropicContentBlock, AnthropicMessage } from '../types';
 
-export interface DeepSeekContentToTextOptions {
+export interface AnthropicContentToTextOptions {
 	includeImageUrls?: boolean;
 	separator?: string;
 }
 
-export function deepSeekContentToText(
+export function anthropicContentToText(
 	content: string | AnthropicContentBlock[] | undefined,
-	options: DeepSeekContentToTextOptions = {},
+	options: AnthropicContentToTextOptions = {},
 ): string {
 	if (!content) {
 		return '';
@@ -37,9 +37,9 @@ export function deepSeekContentToText(
 	return parts.join(separator);
 }
 
-export function deepSeekMessageToText(
+export function anthropicMessageToText(
 	message: Pick<AnthropicMessage, 'content'>,
-	options?: DeepSeekContentToTextOptions,
+	options?: AnthropicContentToTextOptions,
 ): string {
-	return deepSeekContentToText(message.content, options);
+	return anthropicContentToText(message.content, options);
 }

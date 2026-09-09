@@ -1,10 +1,10 @@
 import vscode from 'vscode';
 import { logger } from '../logger';
-import { AnthropicChatProvider, DeepSeekChatProvider } from '../provider';
+import { AnthropicChatProvider } from '../provider';
 
 export async function registerProvider(
 	context: vscode.ExtensionContext,
-): Promise<DeepSeekChatProvider> {
+): Promise<AnthropicChatProvider> {
 	const provider = new AnthropicChatProvider(context);
 
 	context.subscriptions.push(

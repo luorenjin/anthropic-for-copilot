@@ -49,11 +49,11 @@ export function registerActionUrls(context: vscode.ExtensionContext): void {
 				const action = ACTION_URLS.find((item) => item.path === uri.path);
 				if (action) {
 					void Promise.resolve(action.handle()).catch((error) => {
-						logger.warn(`Failed to handle DeepSeek URI action: ${uri.path}`, error);
+						logger.warn(`Failed to handle Anthropic URI action: ${uri.path}`, error);
 					});
 					return;
 				}
-				logger.warn(`Unhandled DeepSeek URI: ${uri.toString(true)}`);
+				logger.warn(`Unhandled Anthropic URI: ${uri.toString(true)}`);
 			},
 		}),
 	);

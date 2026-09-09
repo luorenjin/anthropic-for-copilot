@@ -15,18 +15,13 @@ export class AuthManager {
 
 	/**
 	 * Get API key / Auth Token.
-	 * Priority order:
-	 * 1. SecretStorage (user set explicitly in VS Code)
-	 * 2. Environment variable ANTHROPIC_AUTH_TOKEN
-	 * 3. Environment variable ANTHROPIC_API_KEY
+	 * Strict 2-choose-1 (互斥二选一) Rule:
+	 * 1. If ANTHROPIC_AUTH_TOKEN is set, use it exclusively (ANTHROPIC_API_KEY is ignored).
+	 * 2. If ANTHROPIC_AUTH_TOKEN is NOT set, check ANTHROPIC_API_KEY.
+	 * 3. SecretStorage (user set explicitly in VS Code UI)
 	 * 4. Extension setting anthropic-copilot.apiKey
 	 */
 	async getApiKey(): Promise<string | undefined> {
-		const secretKey = await this.secretStorage.get(API_KEY_SECRET);
-		if (secretKey?.trim()) {
-			return secretKey.trim();
-		}
-
 		const authTokenEnv = process.env.ANTHROPIC_AUTH_TOKEN || process.env.CLAUDE_AUTH_TOKEN;
 		if (authTokenEnv?.trim()) {
 			return authTokenEnv.trim();
@@ -35,6 +30,11 @@ export class AuthManager {
 		const apiKeyEnv = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
 		if (apiKeyEnv?.trim()) {
 			return apiKeyEnv.trim();
+		}
+
+		const secretKey = await this.secretStorage.get(API_KEY_SECRET);
+		if (secretKey?.trim()) {
+			return secretKey.trim();
 		}
 
 		const config = vscode.workspace.getConfiguration('anthropic-copilot');

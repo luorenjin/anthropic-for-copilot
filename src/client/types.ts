@@ -1,4 +1,4 @@
-import type { DeepSeekRequest } from '../types';
+import type { AnthropicRequest } from '../types';
 
 export interface ErrorActionUrls {
 	configureApiKey?: string;
@@ -7,7 +7,9 @@ export interface ErrorActionUrls {
 
 export interface RequestErrorContext {
 	baseUrl: string;
-	request: DeepSeekRequest;
+	request: AnthropicRequest;
+	headers?: Record<string, string>;
+	customHeaders?: Record<string, string>;
 }
 
 export interface ErrorActionLink {
@@ -20,10 +22,10 @@ export interface HttpErrorLinkDefinition {
 	url: string;
 }
 
-export type ApiProviderId = 'deepseek' | 'anthropic';
+export type ApiProviderId = 'anthropic';
 export type HttpErrorLinkStatusKey = 401 | 402 | '5xx';
 
-export type DeepSeekRequestErrorKind = 'http' | 'network' | 'unknown';
+export type AnthropicRequestErrorKind = 'http' | 'network' | 'unknown';
 
 export type NetworkErrorCategory =
 	| 'dns'

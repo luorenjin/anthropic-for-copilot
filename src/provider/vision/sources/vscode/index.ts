@@ -12,8 +12,7 @@ import { getVSCodeVisionTargetChatSessionType } from './model';
 const EXCLUDED_VISION_MODEL_IDS = new Set([
 	'copilot-utility',
 	'copilot-utility-small',
-	'deepseek-v4-flash',
-	'deepseek-v4-pro',
+	'claude-3-5-haiku',
 ]);
 const EXCLUDED_VISION_MODEL_VENDORS = new Set(['claude-code', 'copilotcli']);
 const EXCLUDED_VISION_TARGET_CHAT_SESSION_TYPES = new Set(['claude-code', 'copilotcli']);
@@ -112,7 +111,7 @@ export class VSCodeLanguageModelVisionDescriber implements VisionDescriber {
 		// disable thinking for the internal Vision Exp proxy pass. This is a serial
 		// preprocessing step, so the extra latency and cost should not be paid unless
 		// the user explicitly asks for it in the primary model configuration.
-		const requestOptions = isDeepSeekVisionExpModel(this.model)
+		const requestOptions = isAnthropicVisionExpModel(this.model)
 			? { modelOptions: { reasoningEffort: 'none' as const } }
 			: {};
 		const response = await this.model.sendRequest([visionMsg], requestOptions, request.token);
@@ -188,7 +187,7 @@ export function pickPreferredVSCodeVisionModelKey(
 	// In auto mode, require an exact Vision Exp match and do not fall back to
 	// arbitrary options to keep the default path deterministic.
 	const preferred = options.find(
-		(model) => model.vendor === 'deepseek' && model.id === DEFAULT_VISION_MODEL_ID,
+		(model) => model.vendor === 'anthropic' && model.id === DEFAULT_VISION_MODEL_ID,
 	);
 	return preferred?.key;
 }
@@ -216,17 +215,17 @@ function pickPreferredVSCodeVisionModel(
 
 	// Auto mode: only use the exact default vision model id.
 	return models.find(
-		(model) => model.vendor === 'deepseek' && model.id === DEFAULT_VISION_MODEL_ID,
+		(model) => model.vendor === 'anthropic' && model.id === DEFAULT_VISION_MODEL_ID,
 	);
 }
 
 function isVSCodeVisionModel(model: vscode.LanguageModelChat): boolean {
-	// Keep a narrow DeepSeek exception: allow Vision Exp as proxy, but continue
-	// excluding DeepSeek Flash/Pro to avoid recursive self-selection.
-	const isDeepSeekVisionExp = isDeepSeekVisionExpModel(model);
+	// Keep a narrow Anthropic exception: allow Vision Exp as proxy, but continue
+	// excluding Anthropic Flash/Pro to avoid recursive self-selection.
+	const isAnthropicVisionExp = isAnthropicVisionExpModel(model);
 	const isVendorAllowed =
-		model.vendor === 'deepseek'
-			? isDeepSeekVisionExp
+		model.vendor === 'anthropic'
+			? isAnthropicVisionExp
 			: !EXCLUDED_VISION_MODEL_VENDORS.has(model.vendor);
 	return (
 		isVendorAllowed &&
@@ -238,8 +237,8 @@ function isVSCodeVisionModel(model: vscode.LanguageModelChat): boolean {
 	);
 }
 
-function isDeepSeekVisionExpModel(model: Pick<vscode.LanguageModelChat, 'vendor' | 'id'>): boolean {
-	return model.vendor === 'deepseek' && model.id === DEFAULT_VISION_MODEL_ID;
+function isAnthropicVisionExpModel(model: Pick<vscode.LanguageModelChat, 'vendor' | 'id'>): boolean {
+	return model.vendor === 'anthropic' && model.id === DEFAULT_VISION_MODEL_ID;
 }
 
 function getVSCodeVisionModelKey(model: Pick<vscode.LanguageModelChat, 'vendor' | 'id'>): string {

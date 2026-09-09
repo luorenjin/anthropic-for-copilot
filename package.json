@@ -120,6 +120,14 @@
 		"configuration": {
 			"title": "%anthropic-copilot.config.title%",
 			"properties": {
+				"anthropic-copilot.apiKey": {
+					"type": "string",
+					"default": "",
+					"tags": [
+						"language-models"
+					],
+					"markdownDescription": "%anthropic-copilot.config.apiKey.description%"
+				},
 				"anthropic-copilot.baseUrl": {
 					"type": "string",
 					"default": "https://api.anthropic.com",
@@ -148,18 +156,22 @@
 				},
 				"anthropic-copilot.modelIdOverrides": {
 					"type": "object",
-					"default": {
-						"claude-fable-5.1": "claude-fable-5.1",
-						"claude-opus-5": "claude-opus-5",
-						"claude-sonnet-5": "claude-sonnet-5"
-					},
+					"default": {},
 					"tags": [
 						"language-models"
 					],
 					"description": "%anthropic-copilot.config.modelIdOverrides.description%",
-					"additionalProperties": false,
+					"scope": "resource",
+					"patternProperties": {
+						"^.*$": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": {
+						"type": "string"
+					},
 					"properties": {
-						"claude-fable-5.1": {
+						"claude-fable-5-1": {
 							"type": "string",
 							"description": "%anthropic-copilot.config.modelIdOverrides.claude-fable-5.1.description%"
 						},
@@ -170,6 +182,47 @@
 						"claude-sonnet-5": {
 							"type": "string",
 							"description": "%anthropic-copilot.config.modelIdOverrides.claude-sonnet-5.description%"
+						},
+						"claude-haiku-4-5": {
+							"type": "string",
+							"description": "%anthropic-copilot.config.modelIdOverrides.claude-haiku-4.5.description%"
+						}
+					}
+				},
+				"anthropic-copilot.customModels": {
+					"type": "array",
+					"default": [],
+					"tags": [
+						"language-models"
+					],
+					"description": "%anthropic-copilot.config.customModels.description%",
+					"items": {
+						"type": "object",
+						"required": [
+							"id",
+							"name"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "Model ID in VS Code"
+							},
+							"name": {
+								"type": "string",
+								"description": "Display name in model picker"
+							},
+							"detail": {
+								"type": "string",
+								"description": "Model description"
+							},
+							"maxInputTokens": {
+								"type": "number",
+								"default": 1000000
+							},
+							"maxOutputTokens": {
+								"type": "number",
+								"default": 64000
+							}
 						}
 					}
 				},
@@ -177,10 +230,26 @@
 					"type": "string",
 					"default": "",
 					"tags": [
-						"language-models",
-						"advanced"
+						"language-models"
 					],
 					"markdownDescription": "%anthropic-copilot.config.visionModel.description%"
+				},
+				"anthropic-copilot.customHeaders": {
+					"type": "object",
+					"default": {},
+					"tags": [
+						"language-models"
+					],
+					"markdownDescription": "%anthropic-copilot.config.customHeaders.description%",
+					"scope": "resource",
+					"patternProperties": {
+						"^.*$": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": {
+						"type": "string"
+					}
 				},
 				"anthropic-copilot.debugMode": {
 					"type": "string",
@@ -212,6 +281,8 @@
 		"clean": "node -e \"require('node:fs').rmSync('out', { recursive: true, force: true, maxRetries: process.platform === 'win32' ? 10 : 0 })\"",
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
+		"compile:tests": "tsc -p tests/tsconfig.json",
+		"test": "npm run compile:tests && node --require ./tests/mock-vscode.js --test out/tests/proxy.test.js",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"lint": "oxlint",
 		"format": "oxfmt --write src/",
@@ -226,5 +297,8 @@
 		"oxfmt": "^0.67.0",
 		"oxlint": "^1.82.0",
 		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.124.0"
 	}
 }

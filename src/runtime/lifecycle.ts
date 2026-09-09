@@ -1,14 +1,14 @@
 import vscode from 'vscode';
 import { t } from '../i18n';
 import { logger } from '../logger';
-import { DeepSeekChatProvider } from '../provider';
+import { AnthropicChatProvider } from '../provider';
 import { registerActionUrls } from './actions';
 import { registerCommands } from './commands';
 import { initializeDiagnostics } from './diagnostics';
 import { registerProvider } from './provider';
 import { showWelcomeIfNeeded } from './welcome';
 
-let activeProvider: DeepSeekChatProvider | undefined;
+let activeProvider: AnthropicChatProvider | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
 	await initializeDiagnostics(context);

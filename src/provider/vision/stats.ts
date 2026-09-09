@@ -1,4 +1,4 @@
-import type { DeepSeekMessage } from '../../types';
+import type { AnthropicMessage } from '../../types';
 import type { VisionResolutionStats } from './types';
 
 export function createVisionResolutionStats(): VisionResolutionStats {
@@ -31,10 +31,10 @@ export function createVisionResolutionStats(): VisionResolutionStats {
 	};
 }
 
-/** Reconcile native-image counters against the final DeepSeek payload. */
+/** Reconcile native-image counters against the final Anthropic payload. */
 export function finalizeVisionResolutionStats(
 	stats: VisionResolutionStats,
-	messages: readonly DeepSeekMessage[],
+	messages: readonly AnthropicMessage[],
 ): void {
 	if (stats.imageHandlingMode !== 'native') {
 		return;

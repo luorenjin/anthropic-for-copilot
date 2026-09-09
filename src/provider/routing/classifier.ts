@@ -1,6 +1,6 @@
 import vscode from 'vscode';
-import type { DeepSeekRequest, DeepSeekTool } from '../../types';
-import { deepSeekContentToText } from '../content';
+import type { AnthropicRequest, AnthropicTool } from '../../types';
+import { anthropicContentToText } from '../content';
 
 export type RequestKind =
 	| 'main-agent'
@@ -67,18 +67,18 @@ export function classifyProviderRequest(input: {
 	});
 }
 
-export function classifyDeepSeekRequest(input: {
-	request: DeepSeekRequest;
+export function classifyAnthropicRequest(input: {
+	request: AnthropicRequest;
 	inputMessages?: readonly vscode.LanguageModelChatRequestMessage[];
 }): RequestKind {
 	return classifyRequest({
 		firstText:
-			deepSeekContentToText(input.request.messages[0]?.content) ||
+			anthropicContentToText(input.request.messages[0]?.content) ||
 			(input.inputMessages ? getFirstVscodeText(input.inputMessages) : ''),
 		latestUserText:
 			(input.inputMessages ? getLatestVscodeUserText(input.inputMessages) : '') ||
-			getLatestDeepSeekUserText(input.request),
-		toolNames: input.request.tools?.map(getDeepSeekToolName) ?? [],
+			getLatestAnthropicUserText(input.request),
+		toolNames: input.request.tools?.map(getAnthropicToolName) ?? [],
 	});
 }
 
@@ -143,7 +143,7 @@ function startsWithAny(text: string, prefixes: readonly string[]): boolean {
 	return prefixes.some((prefix) => text.startsWith(prefix));
 }
 
-function getDeepSeekToolName(tool: DeepSeekTool): string {
+function getAnthropicToolName(tool: AnthropicTool): string {
 	return tool.name || tool.function?.name || '';
 }
 
@@ -178,11 +178,11 @@ function getVscodeMessageText(message: vscode.LanguageModelChatRequestMessage): 
 	return text;
 }
 
-function getLatestDeepSeekUserText(request: DeepSeekRequest): string {
+function getLatestAnthropicUserText(request: AnthropicRequest): string {
 	for (let index = request.messages.length - 1; index >= 0; index -= 1) {
 		const message = request.messages[index];
 		if (message.role === 'user') {
-			return deepSeekContentToText(message.content);
+			return anthropicContentToText(message.content);
 		}
 	}
 	return '';

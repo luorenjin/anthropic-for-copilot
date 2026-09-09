@@ -19,9 +19,12 @@ type Translations = Record<string, string>;
 
 const zh: Translations = {
 	// Model descriptions
+	'model.claude-fable-5-1.detail': 'Anthropic 5.1 Fable 深度思维',
 	'model.claude-fable-5.1.detail': 'Anthropic 5.1 Fable 深度思维',
 	'model.claude-opus-5.detail': 'Anthropic 5 Opus 最强推理',
 	'model.claude-sonnet-5.detail': 'Anthropic 5 Sonnet 旗舰全能',
+	'model.claude-haiku-4-5.detail': 'Anthropic 4.5 Haiku 轻量极速',
+	'model.claude-haiku-4.5.detail': 'Anthropic 4.5 Haiku 轻量极速',
 	'model.pricing.currentPeak': '标准时段',
 	'model.pricing.currentOffPeak': '优惠时段',
 	'model.pricing.inputLabel': '输入',
@@ -59,9 +62,9 @@ const zh: Translations = {
 	'vision.unavailable': '无可用视觉模型，图片已忽略。',
 	'vision.proxyError': '视觉代理异常：',
 	'vision.action.configureProxy': '配置视觉代理',
-	'vision.panel.title': 'DeepSeek 视觉代理',
+	'vision.panel.title': 'Anthropic 视觉代理',
 	'vision.panel.description':
-		'为 Flash 和 Pro 配置一个将图片转换成文字描述的视觉模型。Vision Exp 会直接处理原图。',
+		'为 Claude 模型配置视觉代理。支持图片输入。',
 	'vision.panel.source.vscodeLm': 'VS Code 模型',
 	'vision.panel.source.apiEndpoint': 'API 端点',
 	'vision.panel.field.source': '视觉代理来源',
@@ -168,13 +171,13 @@ const zh: Translations = {
 
 	// Request
 	'request.toolsLimitExceeded':
-		'DeepSeek 单次 tools 请求最多支持 {0} 个 functions，当前请求包含 {1} 个。请先用 VS Code 的 Configure Tools 关闭不常用的工具；如果正在使用实验性稳定工具列表设置，请关闭它。',
+		'Anthropic 单次 tools 请求最多支持 {0} 个 functions，当前请求包含 {1} 个。请先用 VS Code 的 Configure Tools 关闭不常用的工具；如果正在使用实验性稳定工具列表设置，请关闭它。',
 	'request.preflightRoundLimitExceeded':
 		'实验性稳定工具列表设置已尝试 {0} 轮，仍无法得到稳定的已启用工具列表。请关闭该实验性设置，或先用 VS Code 的 Configure Tools 关闭不常用的工具。',
-	'notice.visionProxyMissing': '⚠️ 视觉代理不可用，DeepSeek 无法看到图片。[配置视觉代理]({0})',
+	'notice.visionProxyMissing': '⚠️ 视觉代理不可用，Claude 无法看到图片。[配置视觉代理]({0})',
 	'notice.visionProxyFailure': '**⚠️ {0}**\\\n\\\n**{1} · {2}**',
 	'notice.toolDrift':
-		'⚠️ 工具列表不稳定，缓存命中率可能下降。[了解更多](https://github.com/Vizards/deepseek-v4-for-copilot/blob/main/docs/notices/tool-drift.zh.md)',
+		'⚠️ 工具列表不稳定，缓存命中率可能下降。[了解更多](https://github.com/Luorj/anthropic-for-copilot/blob/main/docs/notices/tool-drift.zh.md)',
 
 	// Errors
 	'error.http.400': '[{0}] 请求体格式错误。请根据错误信息提示修改请求体。',
@@ -184,14 +187,14 @@ const zh: Translations = {
 		'[{0}] API Key 错误，认证失败。请检查您的 API Key 是否正确。如没有 API key，请先[创建 API Key]({1})。',
 	'error.http.402': '[{0}] 账号余额不足。请确认账户余额，并前往充值页面进行充值。',
 	'error.http.422': '[{0}] 请求体参数错误。请根据错误信息提示修改相关参数。',
-	'error.http.429': '[{0}] 请求速率（TPM 或 RPM）达到上限。请合理规划您的请求速率。',
+	'error.http.429': '[{0}] 请求速率达到上限或中转站拒绝请求（如缺少 x-litellm-api-key 等自定义 Header，请在设置中配置 customHeaders）。',
 	'error.http.500': '[{0}] 服务器内部故障。请等待后重试。',
 	'error.http.503': '[{0}] 服务器负载过高。请稍后重试您的请求。',
 	'error.http.generic': '[{0}] 服务返回错误响应。',
 	'error.action.setApiKey': '设置 API Key',
 	'error.action.createApiKey': '创建 API Key',
 	'error.action.viewUsage': '用量',
-	'error.action.checkDeepSeekStatus': 'DeepSeek 状态',
+	'error.action.checkAnthropicStatus': 'Anthropic 状态',
 	'error.action.viewDetails': '错误详情',
 	'error.network.dns': '[{0}] DNS 解析失败。请检查网络连接、防火墙或代理设置，以及自定义 baseUrl。',
 	'error.network.unreachable':
@@ -206,25 +209,25 @@ const zh: Translations = {
 	'error.network.configuration': '[{0}] 请求配置无效。请检查自定义 baseUrl 或扩展设置。',
 	'error.network.generic':
 		'[{0}] 网络请求失败。请检查网络连接、防火墙或代理设置，以及自定义 baseUrl。',
-	'error.unknown': 'DeepSeek 请求失败：{0}',
+	'error.unknown': 'Anthropic 请求失败：{0}',
 
 	// Extension
-	'extension.activateFailed': 'DeepSeek 激活失败，请运行 "DeepSeek: 显示日志" 查看详情。',
-	'extension.deactivateFailed': 'DeepSeek 停用异常',
+	'extension.activateFailed': 'Anthropic 激活失败，请运行 "Anthropic: 显示日志" 查看详情。',
+	'extension.deactivateFailed': 'Anthropic 停用异常',
 	'extension.welcomeFailed': '欢迎引导加载异常',
 	'extension.openRequestDumpsFolderFailed':
-		'打开请求 dump 目录失败，请运行 "DeepSeek: 显示日志" 查看详情。',
+		'打开请求 dump 目录失败，请运行 "Anthropic: 显示日志" 查看详情。',
 };
 
 const en: Translations = {
 	// Model descriptions
-	'model.flash.detail': 'Fast, general-purpose model',
-	'model.pro.detail': 'Most capable reasoning model',
-	'model.flash-vision-exp.detail': 'Experimental native vision model',
+	'model.flash.detail': 'Sonnet 5 model',
+	'model.pro.detail': 'Opus 5 model',
+	'model.flash-vision-exp.detail': 'Fable 5.1 model',
 	'model.flash.tooltip':
-		'Fast, efficient DeepSeek V4 model with reasoning close to V4 Pro and economical API pricing.',
+		'Anthropic 5 Sonnet high-performance model with 1M context.',
 	'model.pro.tooltip':
-		'DeepSeek V4 model for agentic coding, broad world knowledge, and high-end reasoning.',
+		'Anthropic 5 Opus flagship reasoning model with 1M context.',
 	'model.pricing.currentPeak': 'Peak',
 	'model.pricing.currentOffPeak': 'Off-peak',
 	'model.pricing.inputLabel': 'Input',
@@ -236,18 +239,18 @@ const en: Translations = {
 	'model.pricing.transitionTime.tomorrow': 'tomorrow at {0}',
 	'model.pricing.transitionTime.weekday': 'on {0} at {1}',
 	'model.flash-vision-exp.tooltip':
-		'Experimental DeepSeek V4 Flash vision model with native image and text input.',
+		'Anthropic 5.1 Fable reasoning & creative model with 1M context.',
 
 	// API Key
-	'auth.apiKeyRequiredDetail': 'Please run DeepSeek: Set API Key to configure.',
+	'auth.apiKeyRequiredDetail': 'Please run Anthropic: Set API Key to configure.',
 	'auth.prompt':
-		'Enter your DeepSeek API key or compatible provider token. Official DeepSeek keys usually start with "sk-".',
-	'auth.placeholder': 'sk-... or provider token',
+		'Enter your Anthropic API key or compatible provider token. Official Anthropic keys usually start with "sk-ant-".',
+	'auth.placeholder': 'sk-ant-... or provider token',
 	'auth.emptyValidation': 'API key cannot be empty',
-	'auth.saved': 'DeepSeek API key saved.',
-	'auth.removed': 'DeepSeek API key removed.',
+	'auth.saved': 'Anthropic API key saved.',
+	'auth.removed': 'Anthropic API key removed.',
 	'auth.notConfigured':
-		'DeepSeek API key not configured. Run "DeepSeek: Set API Key" from the Command Palette.',
+		'Anthropic API key not configured. Run "Anthropic: Set API Key" from the Command Palette.',
 
 	// Thinking Effort
 	'status.thinking': 'Thinking Effort',
@@ -261,16 +264,14 @@ const en: Translations = {
 	'thinking.max.desc': 'Maximum reasoning depth for complex agent tasks',
 
 	// Vision
-	// NOTE: vision.unableToDescribe has been moved to consts.ts as
-	// IMAGE_DESCRIPTION_UNAVAILABLE — it is prompt content, not UI text.
 	'vision.proxyUsing': 'Vision proxy: {0}',
 	'vision.notFound': 'Vision model "{0}" not found',
 	'vision.unavailable': 'No vision models available, image(s) ignored',
 	'vision.proxyError': 'Vision proxy error:',
 	'vision.action.configureProxy': 'Configure Vision Proxy',
-	'vision.panel.title': 'DeepSeek Vision Proxy',
+	'vision.panel.title': 'Anthropic Vision Proxy',
 	'vision.panel.description':
-		'Configure a vision model that turns images into text for Flash and Pro. Vision Exp processes original images directly.',
+		'Configure a vision model that turns images into text for Claude models.',
 	'vision.panel.source.vscodeLm': 'VS Code model',
 	'vision.panel.source.apiEndpoint': 'API endpoint',
 	'vision.panel.field.source': 'Vision proxy source',
@@ -391,14 +392,14 @@ const en: Translations = {
 
 	// Request
 	'request.toolsLimitExceeded':
-		'DeepSeek supports at most {0} functions in a single `tools` request, but this request contains {1}. Use VS Code Configure Tools to disable tools you rarely use. If the experimental tool-list stabilization setting is enabled, turn it off.',
+		'Anthropic supports at most {0} functions in a single `tools` request, but this request contains {1}. Use VS Code Configure Tools to disable tools you rarely use. If the experimental tool-list stabilization setting is enabled, turn it off.',
 	'request.preflightRoundLimitExceeded':
 		'Experimental tool-list stabilization tried {0} rounds but still could not get a stable enabled-tools list. Turn this experimental setting off, or use VS Code Configure Tools to disable tools you rarely use first.',
 	'notice.visionProxyMissing':
-		'⚠️ Vision Proxy is unavailable. DeepSeek cannot see images. [Configure Vision Proxy]({0})',
+		'⚠️ Vision Proxy is unavailable. Claude cannot see images. [Configure Vision Proxy]({0})',
 	'notice.visionProxyFailure': '**⚠️ {0}**\\\n\\\n**{1} · {2}**',
 	'notice.toolDrift':
-		'⚠️ Tool list is unstable; cache hit rate may drop. [Learn more](https://github.com/Vizards/deepseek-v4-for-copilot/blob/main/docs/notices/tool-drift.en.md)',
+		'⚠️ Tool list is unstable; cache hit rate may drop. [Learn more](https://github.com/Luorj/anthropic-for-copilot/blob/main/docs/notices/tool-drift.en.md)',
 
 	// Errors
 	'error.http.400':
@@ -412,7 +413,7 @@ const en: Translations = {
 	'error.http.422':
 		'[{0}] Your request contains invalid parameters. Please modify your request parameters according to the hints in the error message.',
 	'error.http.429':
-		'[{0}] You are sending requests too quickly. Please pace your requests reasonably.',
+		'[{0}] Rate limit exceeded or proxy gateway rejected request (check customHeaders for required headers like x-litellm-api-key).',
 	'error.http.500':
 		'[{0}] Our server encounters an issue. Please retry your request after a brief wait.',
 	'error.http.503':
@@ -421,7 +422,7 @@ const en: Translations = {
 	'error.action.setApiKey': 'Set API Key',
 	'error.action.createApiKey': 'Create API Key',
 	'error.action.viewUsage': 'Usage',
-	'error.action.checkDeepSeekStatus': 'DeepSeek Status',
+	'error.action.checkAnthropicStatus': 'Anthropic Status',
 	'error.action.viewDetails': 'Error Details',
 	'error.network.dns':
 		'[{0}] DNS lookup failed. Check your network connection, firewall, or proxy settings, and your custom baseUrl.',
@@ -441,14 +442,14 @@ const en: Translations = {
 		'[{0}] The request configuration is invalid. Check your custom baseUrl or extension settings.',
 	'error.network.generic':
 		'[{0}] Network request failed. Check your network connection, firewall, or proxy settings, and your custom baseUrl.',
-	'error.unknown': 'DeepSeek request failed: {0}',
+	'error.unknown': 'Anthropic request failed: {0}',
 
 	// Extension
-	'extension.activateFailed': 'DeepSeek failed to activate. Run "DeepSeek: Show Logs" for details.',
-	'extension.deactivateFailed': 'Failed to prepare DeepSeek provider for deactivate',
-	'extension.welcomeFailed': 'Failed to show DeepSeek welcome prompt',
+	'extension.activateFailed': 'Anthropic failed to activate. Run "Anthropic: Show Logs" for details.',
+	'extension.deactivateFailed': 'Failed to prepare Anthropic provider for deactivate',
+	'extension.welcomeFailed': 'Failed to show Anthropic welcome prompt',
 	'extension.openRequestDumpsFolderFailed':
-		'Failed to open request dumps folder. Run "DeepSeek: Show Logs" for details.',
+		'Failed to open request dumps folder. Run "Anthropic: Show Logs" for details.',
 };
 
 /**

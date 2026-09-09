@@ -1,7 +1,7 @@
 import vscode from 'vscode';
 import { createUserFacingError } from '../client';
 import { logger } from '../logger';
-import type { AnthropicUsage, DeepSeekToolCall, DeepSeekUsage } from '../types';
+import type { AnthropicToolCall, AnthropicUsage } from '../types';
 import {
 	observeCancellationToken,
 	type CacheDiagnosticsRun,
@@ -63,7 +63,7 @@ export function streamChatCompletion({
 					handleThinking(text, state, progress);
 				},
 
-				onToolCall: (toolCall: DeepSeekToolCall) => {
+				onToolCall: (toolCall: AnthropicToolCall) => {
 					reportInitialResponseNoticeOnce(progress, state, initialResponseNotice);
 					handleToolCall(toolCall, state, progress);
 				},
@@ -224,7 +224,7 @@ function handleThinking(
 }
 
 function handleToolCall(
-	toolCall: DeepSeekToolCall,
+	toolCall: AnthropicToolCall,
 	state: ResponseStreamState,
 	progress: vscode.Progress<vscode.LanguageModelResponsePart>,
 ): void {
@@ -254,7 +254,7 @@ function finalizeReplayDiagnostics(
 
 function updateCharsPerToken(
 	totalRequestChars: number,
-	usage: DeepSeekUsage,
+	usage: AnthropicUsage,
 	charsPerToken: number,
 ): number {
 	const promptTokens = usage.prompt_tokens ?? usage.input_tokens ?? 0;
@@ -267,7 +267,7 @@ function updateCharsPerToken(
 
 function reportCopilotContextUsage(
 	progress: vscode.Progress<vscode.LanguageModelResponsePart>,
-	usage: DeepSeekUsage,
+	usage: AnthropicUsage,
 	requestKind: RequestKind,
 ): void {
 	const data = {

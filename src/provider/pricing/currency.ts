@@ -1,7 +1,7 @@
 import vscode from 'vscode';
 import { AuthManager } from '../../auth';
 import { getBaseUrl } from '../../config';
-import { isOfficialDeepSeekBaseUrl, normalizeBaseUrl } from '../../endpoint';
+import { isOfficialAnthropicBaseUrl, normalizeBaseUrl } from '../../endpoint';
 import { logger } from '../../logger';
 import type { PricingCurrency } from '../../types';
 
@@ -14,13 +14,13 @@ interface CachedBalanceCurrency {
 	readonly baseUrl: string;
 }
 
-interface DeepSeekBalanceInfo {
+interface AnthropicBalanceInfo {
 	readonly currency?: unknown;
 	readonly total_balance?: unknown;
 	readonly topped_up_balance?: unknown;
 }
 
-interface DeepSeekBalanceResponse {
+interface AnthropicBalanceResponse {
 	readonly balance_infos?: unknown;
 }
 
@@ -38,7 +38,7 @@ export class BalanceCurrencyResolver {
 
 	getDisplayCurrency(): PricingCurrency | undefined {
 		const baseUrl = normalizeBaseUrl(getBaseUrl());
-		if (!isOfficialDeepSeekBaseUrl(baseUrl)) {
+		if (!isOfficialAnthropicBaseUrl(baseUrl)) {
 			return undefined;
 		}
 
@@ -64,7 +64,7 @@ export class BalanceCurrencyResolver {
 		const refresh = this.refreshFromBalance(controller, generation)
 			.catch((error) => {
 				if (!(isAbortError(error) && generation !== this.generation)) {
-					logger.warn('Failed to refresh DeepSeek balance currency', error);
+					logger.warn('Failed to refresh Anthropic balance currency', error);
 				}
 			})
 			.finally(() => {
@@ -89,7 +89,7 @@ export class BalanceCurrencyResolver {
 
 	private needsRefresh(): boolean {
 		const baseUrl = normalizeBaseUrl(getBaseUrl());
-		if (!isOfficialDeepSeekBaseUrl(baseUrl)) {
+		if (!isOfficialAnthropicBaseUrl(baseUrl)) {
 			return false;
 		}
 
@@ -102,7 +102,7 @@ export class BalanceCurrencyResolver {
 
 	private async refreshFromBalance(controller: AbortController, generation: number): Promise<void> {
 		const baseUrl = normalizeBaseUrl(getBaseUrl());
-		if (!isOfficialDeepSeekBaseUrl(baseUrl)) {
+		if (!isOfficialAnthropicBaseUrl(baseUrl)) {
 			return;
 		}
 
@@ -157,23 +157,23 @@ async function fetchBalanceCurrency(
 		});
 
 		if (!response.ok) {
-			logger.debug(`DeepSeek balance request failed with HTTP ${response.status}`);
+			logger.debug(`Anthropic balance request failed with HTTP ${response.status}`);
 			return undefined;
 		}
 
-		const data = (await response.json()) as DeepSeekBalanceResponse;
+		const data = (await response.json()) as AnthropicBalanceResponse;
 		return chooseBalanceCurrency(data);
 	} finally {
 		clearTimeout(timeout);
 	}
 }
 
-function chooseBalanceCurrency(data: DeepSeekBalanceResponse): PricingCurrency | undefined {
+function chooseBalanceCurrency(data: AnthropicBalanceResponse): PricingCurrency | undefined {
 	if (!Array.isArray(data.balance_infos)) {
 		return undefined;
 	}
 
-	const infos = data.balance_infos.filter(isDeepSeekBalanceInfo);
+	const infos = data.balance_infos.filter(isAnthropicBalanceInfo);
 	return (
 		findCurrencyByPositiveBalance(infos, 'topped_up_balance') ??
 		findCurrencyByPositiveBalance(infos, 'total_balance') ??
@@ -182,7 +182,7 @@ function chooseBalanceCurrency(data: DeepSeekBalanceResponse): PricingCurrency |
 }
 
 function findCurrencyByPositiveBalance(
-	infos: readonly DeepSeekBalanceInfo[],
+	infos: readonly AnthropicBalanceInfo[],
 	key: 'total_balance' | 'topped_up_balance',
 ): PricingCurrency | undefined {
 	for (const info of infos) {
@@ -198,7 +198,7 @@ function parsePricingCurrency(value: unknown): PricingCurrency | undefined {
 	return value === 'USD' || value === 'CNY' ? value : undefined;
 }
 
-function isDeepSeekBalanceInfo(value: unknown): value is DeepSeekBalanceInfo {
+function isAnthropicBalanceInfo(value: unknown): value is AnthropicBalanceInfo {
 	return typeof value === 'object' && value !== null;
 }
 
