@@ -4,14 +4,15 @@
 	"description": "Use Anthropic Claude (Sonnet 5, Opus 5, Fable 5.1) with 1M context in Copilot Chat with native vision, custom API Key, custom Base URL, reasoning, and agent tools.",
 	"icon": "resources/icon.png",
 	"version": "1.0.0",
-	"publisher": "Vizards",
+	"publisher": "Luorj",
+	"author": "Luorj",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Vizards/anthropic-for-copilot"
+		"url": "https://github.com/Luorj/anthropic-for-copilot"
 	},
 	"engines": {
-		"vscode": "^1.116.0",
+		"vscode": "^1.136.0",
 		"node": ">=24"
 	},
 	"categories": [
@@ -122,12 +123,18 @@
 				"anthropic-copilot.baseUrl": {
 					"type": "string",
 					"default": "https://api.anthropic.com",
+					"tags": [
+						"language-models"
+					],
 					"description": "%anthropic-copilot.config.baseUrl.description%"
 				},
 				"anthropic-copilot.maxTokens": {
 					"type": "number",
 					"default": 0,
 					"minimum": 0,
+					"tags": [
+						"language-models"
+					],
 					"description": "%anthropic-copilot.config.maxTokens.description%"
 				},
 				"anthropic-copilot.experimental.stabilizeToolList": {
@@ -135,6 +142,7 @@
 					"default": false,
 					"markdownDescription": "%anthropic-copilot.config.experimental.stabilizeToolList.description%",
 					"tags": [
+						"language-models",
 						"experimental"
 					]
 				},
@@ -145,6 +153,9 @@
 						"claude-opus-5": "claude-opus-5",
 						"claude-sonnet-5": "claude-sonnet-5"
 					},
+					"tags": [
+						"language-models"
+					],
 					"description": "%anthropic-copilot.config.modelIdOverrides.description%",
 					"additionalProperties": false,
 					"properties": {
@@ -166,6 +177,7 @@
 					"type": "string",
 					"default": "",
 					"tags": [
+						"language-models",
 						"advanced"
 					],
 					"markdownDescription": "%anthropic-copilot.config.visionModel.description%"
@@ -173,6 +185,9 @@
 				"anthropic-copilot.debugMode": {
 					"type": "string",
 					"default": "minimal",
+					"tags": [
+						"language-models"
+					],
 					"enum": [
 						"minimal",
 						"metadata",
@@ -204,12 +219,12 @@
 		"package": "vsce package -o dist/"
 	},
 	"devDependencies": {
-		"@types/node": "^25.6.0",
-		"@types/vscode": "^1.116.0",
+		"@types/node": "^26.5.0",
+		"@types/vscode": "^1.136.0",
 		"@vscode/vsce": "^3.9.1",
-		"ovsx": "0.10.12",
-		"oxfmt": "^0.47.0",
-		"oxlint": "^1.62.0",
-		"typescript": "^6.0.3"
+		"ovsx": "1.1.1",
+		"oxfmt": "^0.67.0",
+		"oxlint": "^1.82.0",
+		"typescript": "^7.0.2"
 	}
 }

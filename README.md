@@ -1,141 +1,105 @@
-<h1 align="center">DeepSeek V4 for Copilot Chat</h1>
+<h1 align="center">Anthropic Claude for Copilot Chat</h1>
 
 <p align="center">
-  <!-- marketplace-readme:remove-start -->
-  <a href="https://marketplace.visualstudio.com/items?itemName=Vizards.deepseek-v4-for-copilot"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-Install-007ACC?logo=visualstudiocode&logoColor=white&style=for-the-badge" alt="Install from VS Code Marketplace"></a>
-  <a href="https://open-vsx.org/extension/Vizards/deepseek-v4-for-copilot"><img src="https://img.shields.io/badge/Open%20VSX-Install-6A4FB6?style=for-the-badge" alt="Install from Open VSX"></a>
-  <br/>
-  <!-- marketplace-readme:remove-end -->
-  <img src="https://img.shields.io/github/v/release/Vizards/deepseek-v4-for-copilot?style=for-the-badge&label=Version" alt="Version" />
-  <img src="https://vsmarketplacebadges.dev/installs-short/Vizards.deepseek-v4-for-copilot.svg?style=for-the-badge" alt="Installs" />
+  <img src="resources/icon.png" alt="Anthropic Claude Logo" width="120" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/VS%20Code%20Extension-v1.0.0-d97757?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="Version" />
+  <img src="https://img.shields.io/badge/Anthropic-Messages%20API-d97757?style=for-the-badge" alt="Anthropic Messages API" />
+  <img src="https://img.shields.io/badge/Context-1M%20Tokens-d97757?style=for-the-badge" alt="1M Context" />
 </p>
 
 <p align="center">
   English |
-  <a href="https://github.com/Vizards/deepseek-v4-for-copilot/blob/main/README.zh-cn.md">简体中文</a>
+  <a href="README.zh-cn.md">简体中文</a>
 </p>
 
-**Pick DeepSeek V4 from the Copilot Chat model picker — and keep everything else Copilot already gives you.**
+**Pick Anthropic Claude 5 (Sonnet 5, Opus 5, Fable 5.1) with 1M Context directly in the Copilot Chat model picker — keeping all of Copilot's agent tools and UI intact.**
 
-<p align="center">
-  <img src="resources/screenshots/01-picker.png" alt="DeepSeek V4 Flash, Flash Vision Exp, and Pro in the Copilot Chat model picker, alongside the Thinking Effort menu" width="800">
-</p>
+---
 
-Love DeepSeek's price-performance but don't want to give up GitHub Copilot's agent mode, tool calling, and polished UI? This extension adds **DeepSeek V4 Flash, Pro, and Flash Vision Exp** to the Copilot Chat model selector — with **native vision or Vision Proxy**, **thinking mode**, and your own API key.
+## 🌟 Overview
 
-## Why this extension?
+Love Anthropic Claude's intelligence, reasoning, and massive 1M context window, but don't want to sacrifice GitHub Copilot's agent mode, tool calling, and seamless editor integration?
 
-- **Don't replace Copilot — power it up.** No new sidebar, no new chat UI to learn. Just a new model in the picker you already use.
-- **Agent mode, tool calling, instructions, MCP, skills — all of it still works.** Copilot's entire stack, now running on DeepSeek.
-- **Two ways to work with images.** Flash Vision Exp receives image attachments natively. Flash and Pro keep their existing text context while a configurable Vision Proxy turns images into descriptions.
-- **BYOK, pay DeepSeek directly.** Your API key, your bill, your rate limits. Stored in the OS keychain, never on disk.
+This extension brings **Anthropic Claude 5 models (Sonnet 5, Opus 5, Fable 5.1)** directly into the native VS Code Copilot Chat model selector — with **1M Context Tokens**, **Custom API Key & Custom Base URL**, **CC-SWITCH Integration**, **Native Multimodal Vision**, **Extended Thinking**, and **Agent Tool Calling**.
 
-## Features
+---
 
-### Three DeepSeek V4 models in the model picker
-Flash, Pro, and the experimental Flash Vision Exp appear alongside other models in Copilot Chat's model selector. All three support DeepSeek's long context, tool calling, and configurable thinking effort.
+## ✨ Features
 
-### Native Vision and Vision Proxy
-Choose the image path that fits the conversation:
+### 1. Anthropic 5 Generation Models (1M Context)
+- **Sonnet 5** (`claude-sonnet-5`) — High-performance flagship model with 1M tokens context.
+- **Opus 5** (`claude-opus-5`) — Anthropic's deepest logic & complex reasoning model with 1M tokens context.
+- **Fable 5.1** (`claude-fable-5.1`) — Advanced reasoning & creative model with 1M tokens context.
 
-- **DeepSeek V4 Flash Vision Exp** handles image attachments as native multimodal input, without Vision Proxy. It is exposed as a separate experimental model and does not silently fall back when the configured API endpoint does not support its model ID.
-- **DeepSeek V4 Flash and Pro** use Vision Proxy: an image-capable model first describes each attachment, then the main DeepSeek model receives the description with the conversation. Auto mode selects Flash Vision Exp when available, while an explicitly configured VS Code model or API endpoint remains supported.
+### 2. Custom API Key & Base URL (BYOK & Proxy Support)
+- **Custom Base URL**: Configure `anthropic-copilot.baseUrl` (defaults to `https://api.anthropic.com`) to connect to official endpoints, One API, OpenRouter, or custom reverse proxies.
+- **Secure SecretStorage**: Save your API Key or Auth Token safely via `Anthropic: Set API Key`. Stored securely in OS Keychain, never written to `settings.json`.
 
-Avoid switching models mid-chat just to inspect an image if DeepSeek prefix-cache reuse matters. Start the conversation with Flash Vision Exp for native vision, or stay on Flash/Pro and let Vision Proxy preserve the main model choice.
+### 3. CC-SWITCH & Environment Variable Auto-Detection
+Seamlessly compatible with **CC-SWITCH** and Claude Code developer tools:
+- Automatically checks `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `CLAUDE_AUTH_TOKEN`, and `CLAUDE_API_KEY`.
+- Automatically inherits proxy URLs from `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_URL`, or `CLAUDE_BASE_URL`.
 
-<p align="center">
-  <img src="resources/screenshots/03-vision.png" alt="Dropping an image into Copilot Chat and DeepSeek responding to it via the vision proxy" width="800">
-</p>
+### 4. Extended Thinking & Native Vision
+- Full support for Claude's **Extended Thinking** (`thinking` blocks). Reasoning processes are rendered inside VS Code Copilot Chat's collapsible thinking view.
+- Support for **Native Multimodal Vision** (base64 image uploads) and function calling.
 
-### Thinking Mode with Reasoning Effort Control
-Full support for DeepSeek V4's `reasoning_content`. Flash, Pro, and Flash Vision Exp offer `none` (off), `low` (light reasoning), `high` (balanced, default), and `max` (deep reasoning for hard agent tasks), matching the effort levels implemented by the official API.
+### 5. Inherits Every Copilot Capability
+Plugs into VS Code's native `LanguageModelChatProvider` API, preserving Copilot's full ecosystem:
+- **Agent mode** — Autonomous multi-step coding tasks.
+- **Tool calling** — Workspace search, file edits, terminal execution, Git commands.
+- **Instructions & Skills** — `.instructions.md`, `AGENTS.md`, and custom prompt skills work out of the box.
 
-### Inherits Every Copilot Capability
-Because this plugs into Copilot's native provider API, you get the full stack for free:
-- **Agent mode** — autonomous multi-step tasks
-- **Tool calling** — file edits, terminal, workspace search, Git, tests
-- **Instructions & skills** — all your `.instructions.md`, `AGENTS.md`, and skills just work
-- **Prompt caching stats** — DeepSeek's cache hit rate logged in the output channel so you can see the savings
+---
 
-<p align="center">
-  <img src="resources/screenshots/04-agent.png" alt="DeepSeek V4 Pro running Copilot's agent mode with tool calls" width="800">
-</p>
-
-### Secure by Default
-API key lives in VS Code's `SecretStorage` (OS keychain on macOS / Windows / Linux). Never in `settings.json`, never in your Git history.
-
-### Zero Runtime Dependencies
-Pure VS Code API + Node.js built-ins. No Python, no Docker, no local proxy server to babysit.
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- VS Code `1.116.0` or later.
+- GitHub Copilot subscription (Free, Pro, or Enterprise).
+- An Anthropic API Key or Auth Token (or a proxy token when using custom endpoints / CC-SWITCH).
 
-- VS Code 1.116 or later. This extension relies on non-public Copilot Chat APIs that may break on newer VS Code versions — [report an issue](https://github.com/Vizards/deepseek-v4-for-copilot/issues) if you hit one.
-- GitHub Copilot subscription (Free / Pro / Enterprise — the free tier works)
-- DeepSeek API key from [platform.deepseek.com](https://platform.deepseek.com), or a compatible provider token when using a custom `deepseek-copilot.baseUrl`
+### Quick Setup
 
-### Installation
+1. **Install the Extension**:
+   - Install `.vsix` from `Anthropic: Install from VSIX` or command line:
+     ```bash
+     code --install-extension anthropic-for-copilot.vsix
+     ```
 
-Install from the registry used by your editor:
+2. **Configure API Key / Token**:
+   - Press `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`), run **`Anthropic: Set API Key`**, and paste your Key or Token.
+   - *Alternatively*: Set the `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` environment variable.
 
-1. **Microsoft VS Code** — install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Vizards.deepseek-v4-for-copilot).
-2. **Editors that use Open VSX** — install from [Open VSX](https://open-vsx.org/extension/Vizards/deepseek-v4-for-copilot).
+3. **Configure Custom Base URL (Optional)**:
+   - Run **`Anthropic: Open Settings`** and set `anthropic-copilot.baseUrl` if using a custom API proxy or CC-SWITCH.
 
-### Usage
+4. **Start Chatting**:
+   - Open Copilot Chat (`Ctrl+Alt+I`), select **Sonnet 5**, **Opus 5**, or **Fable 5.1** from the model picker, and enjoy 1M context!
 
-1. Run **DeepSeek: Set API Key** from the Command Palette (`Cmd+Shift+P`)
-2. Paste your key or compatible provider token (official DeepSeek keys usually start with `sk-`)
-3. Open Copilot Chat, click the model picker, and choose **DeepSeek V4 Flash**, **DeepSeek V4 Pro**, or **DeepSeek V4 Flash Vision Exp**
-4. That's it — chat away
+---
 
-## Models
+## ⚙️ Configuration Reference
 
-| Model | Image Handling | Thinking Effort | Best For |
+| Setting | Type | Default | Description |
 |---|---|---|---|
-| **DeepSeek V4 Flash** | Vision Proxy | `none` / `low` / `high` / `max` | Fast everyday coding, quick edits, cheap iteration |
-| **DeepSeek V4 Pro** | Vision Proxy | `none` / `low` / `high` / `max` | Complex refactors, agent tasks, deep reasoning |
-| **DeepSeek V4 Flash Vision Exp** | Native image input | `none` / `low` / `high` / `max` | Direct, experimental image understanding with fast reasoning |
+| `anthropic-copilot.baseUrl` | `string` | `"https://api.anthropic.com"` | Anthropic API Base URL (or custom proxy / CC-SWITCH endpoint) |
+| `anthropic-copilot.maxTokens` | `number` | `0` | Max output tokens per request (0 uses model default) |
+| `anthropic-copilot.modelIdOverrides` | `object` | `{}` | Map logical model IDs to custom API model names on proxy servers |
+| `anthropic-copilot.debugMode` | `string` | `"minimal"` | Diagnostic logging verbosity (`minimal`, `metadata`, `verbose`) |
 
-All three support optional thinking mode, tool calling, and 1M token context. Flash Vision Exp is experimental; custom API endpoints and compatible providers must expose its configured model ID to use it directly.
+---
 
-## Settings
+## 🔒 Security & Privacy
 
-| Setting | Default | Description |
-|---|---|---|
-| `deepseek-copilot.baseUrl` | `https://api.deepseek.com` | API endpoint — change for self-hosted / proxied deployments |
-| `deepseek-copilot.maxTokens` | `0` | Max output tokens (`0` = no limit). Useful for cost control |
-| `deepseek-copilot.modelIdOverrides` | prefilled official ID map | API model IDs to send for DeepSeek V4 Flash, Pro, and Flash Vision Exp. Change only for compatible third-party APIs with different model names |
-| `deepseek-copilot.debugMode` | `minimal` | Diagnostic mode: `minimal` for token usage only, `metadata` for privacy-preserving logs, or `verbose` for full request dumps and pipeline snapshots under extension global storage. Full dumps may include sensitive prompt text, tool schemas, file snippets, and image descriptions. Use `DeepSeek: Open Request Dumps Folder` to open the dump location |
-| `deepseek-copilot.visionModel` | *(auto)* | Vision Proxy used by Flash and Pro. Auto mode selects Flash Vision Exp when available; configure another VS Code model or API endpoint with `DeepSeek: Configure Vision Proxy` |
-| `deepseek-copilot.visionPrompt` | *(built-in)* | Prompt used by Flash/Pro's Vision Proxy to describe image attachments. It does not affect native Flash Vision Exp requests |
-| `deepseek-copilot.experimental.stabilizeToolList` | `false` | Experimental. Tries to pre-activate VS Code/Copilot virtual tools so the DeepSeek API `tools` parameter is more complete and stable across turns. May improve context-cache hit rate when enabled tools change between turns. Can increase input tokens because more function definitions may be included; cache-hit input tokens are cheaper but still count toward usage. Usually leave it off with 64 or fewer enabled tools unless the tool list still changes across turns; do not enable it with more than 128 enabled tools |
+- API keys and tokens are stored in VS Code's encrypted `SecretStorage` (Windows Credential Manager / macOS Keychain / Linux Secret Service).
+- Zero external runtime dependencies — uses Node.js built-in `fetch` and standard VS Code Extension APIs.
 
-Thinking Effort is configured from Copilot Chat's model picker for each DeepSeek model.
+---
 
-Example `settings.json` override for compatible API proxies:
+## 📄 License
 
-```json
-{
-  "deepseek-copilot.modelIdOverrides": {
-    "deepseek-v4-flash": "your-flash-model-id",
-    "deepseek-v4-pro": "your-pro-model-id",
-    "deepseek-v4-flash-vision-exp": "your-vision-model-id"
-  }
-}
-```
-
-## Compared to alternatives
-
-| | This extension | Local proxy (e.g. LiteLLM) | Standalone DeepSeek extensions |
-|---|---|---|---|
-| Works inside Copilot Chat | ✅ | ✅ | ❌ separate UI |
-| Agent mode, tools, skills | ✅ | ✅ | ⚠️ reimplemented |
-| Vision support | ✅ native + proxied | ❌ | ❌ |
-| No extra process to run | ✅ | ❌ | ✅ |
-| One-click install | ✅ | ❌ | ✅ |
-| API key in OS keychain | ✅ | ❌ | ⚠️ varies |
-
-## License
-
-[MIT](LICENSE)
+[MIT License](LICENSE) © Luorj

@@ -85,20 +85,28 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 		return this.authManager.hasApiKey();
 	}
 
+	private refreshDebounceTimer: NodeJS.Timeout | undefined;
+
 	refreshModelPicker(): void {
-		this.onDidChangeLanguageModelChatInformationEmitter.fire();
+		if (this.refreshDebounceTimer) {
+			clearTimeout(this.refreshDebounceTimer);
+		}
+		this.refreshDebounceTimer = setTimeout(() => {
+			this.refreshDebounceTimer = undefined;
+			this.onDidChangeLanguageModelChatInformationEmitter.fire();
+		}, 300);
 	}
 
 	private invalidateCurrencyAndRefreshModels(): void {
 		void this.balanceCurrencyResolver
 			.invalidate()
 			.catch((error) => logger.warn('Failed to invalidate balance currency', error))
-			.finally(() => this.onDidChangeLanguageModelChatInformationEmitter.fire());
+			.finally(() => this.refreshModelPicker());
 	}
 
 	async prepareForDeactivate(): Promise<void> {
 		this.isActive = false;
-		this.onDidChangeLanguageModelChatInformationEmitter.fire();
+		this.refreshModelPicker();
 
 		try {
 			await vscode.lm.selectChatModels({ vendor: 'anthropic' });
@@ -128,9 +136,17 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 		if (hasKey) {
 			this.balanceCurrencyResolver.refreshInBackground();
 		}
-		return MODELS.map((model) =>
-			toChatInfo(model, hasKey, pricingCurrency, now, showPricingNotice),
-		);
+
+		const seenIds = new Set<string>();
+		const result: vscode.LanguageModelChatInformation[] = [];
+		for (const model of MODELS) {
+			if (seenIds.has(model.id)) {
+				continue;
+			}
+			seenIds.add(model.id);
+			result.push(toChatInfo(model, hasKey, pricingCurrency, now, showPricingNotice));
+		}
+		return result;
 	}
 
 	async provideLanguageModelChatResponse(

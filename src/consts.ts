@@ -41,7 +41,7 @@ export const WELCOME_SHOWN_KEY = 'anthropic-copilot.welcomeShown';
 // ---- Walkthrough ----
 
 /** Walkthrough contribution ID. */
-export const WALKTHROUGH_ID = 'Vizards.anthropic-for-copilot#anthropicGettingStarted';
+export const WALKTHROUGH_ID = 'Luorj.anthropic-for-copilot#anthropicGettingStarted';
 
 // ---- Model registry ----
 
@@ -53,7 +53,7 @@ export const MODELS: ModelDefinition[] = [
 		family: 'claude',
 		version: 'v5.1',
 		detail: 'Anthropic 5.1 Fable reasoning & creative model with 1M context',
-		maxInputTokens: 1048576,
+		maxInputTokens: 1000000,
 		maxOutputTokens: 64000,
 		capabilities: {
 			toolCalling: true,
@@ -84,7 +84,7 @@ export const MODELS: ModelDefinition[] = [
 		family: 'claude',
 		version: 'v5',
 		detail: 'Anthropic 5 Opus flagship reasoning model with 1M context',
-		maxInputTokens: 1048576,
+		maxInputTokens: 1000000,
 		maxOutputTokens: 64000,
 		capabilities: {
 			toolCalling: true,
@@ -115,7 +115,7 @@ export const MODELS: ModelDefinition[] = [
 		family: 'claude',
 		version: 'v5',
 		detail: 'Anthropic 5 Sonnet high-performance model with 1M context',
-		maxInputTokens: 1048576,
+		maxInputTokens: 1000000,
 		maxOutputTokens: 64000,
 		capabilities: {
 			toolCalling: true,

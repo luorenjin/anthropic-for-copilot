@@ -1,141 +1,106 @@
-<h1 align="center">DeepSeek V4 for Copilot Chat</h1>
+<h1 align="center">Anthropic Claude for Copilot Chat</h1>
 
 <p align="center">
-  <!-- marketplace-readme:remove-start -->
-  <a href="https://marketplace.visualstudio.com/items?itemName=Vizards.deepseek-v4-for-copilot"><img src="https://img.shields.io/badge/VS%20Code%20Marketplace-Install-007ACC?logo=visualstudiocode&logoColor=white&style=for-the-badge" alt="从 VS Code Marketplace 安装"></a>
-  <a href="https://open-vsx.org/extension/Vizards/deepseek-v4-for-copilot"><img src="https://img.shields.io/badge/Open%20VSX-Install-6A4FB6?style=for-the-badge" alt="从 Open VSX 安装"></a>
-  <br/>
-  <!-- marketplace-readme:remove-end -->
-  <img src="https://img.shields.io/github/v/release/Vizards/deepseek-v4-for-copilot?style=for-the-badge&label=Version" alt="版本" />
-  <img src="https://vsmarketplacebadges.dev/installs-short/Vizards.deepseek-v4-for-copilot.svg?style=for-the-badge" alt="安装量" />
+  <img src="resources/icon.png" alt="Anthropic Claude Logo" width="120" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/Vizards/deepseek-v4-for-copilot/blob/main/README.md">English</a> |
+  <img src="https://img.shields.io/badge/VS%20Code%20Extension-v1.0.0-d97757?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="版本" />
+  <img src="https://img.shields.io/badge/Anthropic-Messages%20API-d97757?style=for-the-badge" alt="Anthropic Messages API" />
+  <img src="https://img.shields.io/badge/上下文-1M%20Tokens-d97757?style=for-the-badge" alt="1M 上下文" />
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> |
   简体中文
 </p>
 
-**在 Copilot Chat 模型选择器中直接使用 DeepSeek V4——无需离开你熟悉的 Copilot 工作流。**
+**直接在 VS Code Copilot Chat 模型选择器中使用拥有 1M 超长上下文的 Anthropic Claude 5 系列模型（Sonnet 5, Opus 5, Fable 5.1），同时完整保留 GitHub Copilot 的所有 Agent 工具与原生界面。**
 
-<p align="center">
-  <img src="resources/screenshots/01-picker.png" alt="DeepSeek V4 Flash、Flash Vision Exp 和 Pro 出现在 Copilot Chat 模型选择器中，并展示思考深度菜单" width="800">
-</p>
+---
 
-喜欢 DeepSeek 的性价比，但不想放弃 GitHub Copilot 的 Agent 模式、工具调用和成熟的交互体验？本扩展将 **DeepSeek V4 Flash、Pro 和 Flash Vision Exp** 直接接入 Copilot Chat 模型选择器，支持**原生视觉或视觉代理**、**思考模式**，并使用你自己的 API Key。
+## 🌟 为什么选择本扩展？
 
-## 为什么选这个扩展？
+喜欢 Anthropic Claude 卓越的推理能力、编程表现和 **1M Tokens** 超大上下文，但又不想放弃 GitHub Copilot 的 Agent 模式、工具调用以及流畅的编辑器集成体验？
 
-- **不是替换 Copilot，而是增强它。** 没有新的侧边栏，没有新的聊天界面需要学习。只是在你已经在用的模型选择器中多了一个选项。
-- **Agent 模式、工具调用、Instructions、MCP、Skills——全部正常运作。** Copilot 的完整能力栈，现在跑在 DeepSeek 上。
-- **两种图片处理方式。** Flash Vision Exp 会原生接收图片附件；Flash 和 Pro 则保留原有文本上下文，由可配置的视觉代理将图片转换为文字描述。
-- **需自行提供 API Key，直接向 DeepSeek 付费。** 你的 API Key，你的账单，你的速率限制。密钥存储在操作系统密钥链中，不会以明文形式写入磁盘。
+本扩展将 **Anthropic Claude 5 代模型 (Sonnet 5, Opus 5, Fable 5.1)** 无缝接入 VS Code 原生 Copilot Chat 模型选择器，带来 **1M 精准上下文**、**自定义 API Key & Base URL**、**CC-SWITCH 原生适配**、**原生多模态视觉理解**、**思维链 (Extended Thinking)** 以及 **Agent 工具调用**。
 
-## 功能特性
+---
 
-### 三种 DeepSeek V4 模型出现在模型选择器中
-Flash、Pro 和实验性的 Flash Vision Exp 会与其他模型并列出现在 Copilot Chat 的模型选择器中。三者均支持 DeepSeek 的长上下文、工具调用和可配置的思考深度。
+## ✨ 核心特性
 
-### 原生视觉与视觉代理
-可以根据对话需要选择不同的图片处理路径：
+### 1. Anthropic 5 代旗舰模型 (1M 上下文)
+- **Sonnet 5** (`claude-sonnet-5`) — 高性能全能旗舰模型，**1,000,000 Tokens (1M)** 上下文。
+- **Opus 5** (`claude-opus-5`) — Anthropic 最强逻辑与深度推理模型，**1,000,000 Tokens (1M)** 上下文。
+- **Fable 5.1** (`claude-fable-5.1`) — 深度思维与创意推理模型，**1,000,000 Tokens (1M)** 上下文。
 
-- **DeepSeek V4 Flash Vision Exp** 将图片附件作为原生多模态输入处理，不经过视觉代理。它是一个独立暴露的实验模型；如果当前 API 端点不支持其模型 ID，插件不会静默降级。
-- **DeepSeek V4 Flash 和 Pro** 使用视觉代理：先由支持图片输入的模型描述附件，再将描述连同对话内容交给 DeepSeek 主模型。自动模式会在可用时选择 Flash Vision Exp，同时继续支持显式配置其他 VS Code 模型或 API 端点。
+### 2. 自定义 API Key & Base URL (BYOK 与代理支持)
+- **自定义 Base URL**：配置 `anthropic-copilot.baseUrl`（默认为 `https://api.anthropic.com`），支持无缝接入官方端点、One API、OpenRouter 或自定义反向代理。
+- **加密存储**：通过运行 `Anthropic: 设置 API Key` 安全保存密钥或 Token，秘钥加密保存在 OS Keychain (SecretStorage) 中，绝不写入本地文件。
 
-如果你在意 DeepSeek 前缀缓存的复用，不建议只为查看一张图片而在对话中途切换模型。需要原生视觉时，可以从对话开始就选择 Flash Vision Exp；希望继续使用 Flash/Pro 时，则让视觉代理处理图片并保留主模型选择。
+### 3. CC-SWITCH 与环境变量无缝自动检测
+原生兼容 **CC-SWITCH** 等 Claude Code 开发者工具与中转管理软件：
+- 自动检测并读取 `ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_API_KEY`、`CLAUDE_AUTH_TOKEN` 与 `CLAUDE_API_KEY`。
+- 自动继承 `ANTHROPIC_BASE_URL`、`ANTHROPIC_API_URL` 或 `CLAUDE_BASE_URL` 代理地址，实现无感平滑切换。
 
-<p align="center">
-  <img src="resources/screenshots/03-vision.png" alt="将图片拖入 Copilot Chat，DeepSeek 通过视觉代理响应" width="800">
-</p>
+### 4. 深度思维链 (Thinking) 与原生多模态
+- 完整支持 Claude **Extended Thinking** (`thinking` 块)，思考过程直接渲染在 Copilot Chat 的可折叠思考视图中。
+- 支持 **原生多模态视觉理解**（base64 图片上传与识别）及 Function Calling 工具调用。
 
-### 思考模式与推理深度控制
-完整支持 DeepSeek V4 的 `reasoning_content`。Flash、Pro 和 Flash Vision Exp 均可选择 `停用`、`轻量`、`标准`（均衡，默认）或 `深度`（适用于复杂 Agent 任务），与官方 API 已实现的推理档位保持一致。
+### 5. 继承 Copilot 的全套能力
+基于 VS Code 原生 `LanguageModelChatProvider` API 构建，完美兼容 Copilot 全部生态：
+- **Agent 模式** — 自主多步骤代码重构与开发。
+- **Tool calling** — 工作区搜索、文件修改、终端命令执行、Git 交互。
+- **指令与技能** — `.instructions.md`、`AGENTS.md` 及 Prompt 技能完美运行。
 
-### 继承全部 Copilot 能力
-由于本扩展接入的是 Copilot 的原生 provider API，你免费获得完整能力栈：
-- **Agent 模式**——自主执行多步骤任务
-- **工具调用**——文件编辑、终端操作、工作区搜索、Git、测试
-- **Instructions & Skills**——你的 `.instructions.md`、`AGENTS.md` 和各项 Skills 开箱即用
-- **Prompt 缓存统计**——在输出通道中记录 DeepSeek 缓存命中率，直观看到成本节省
+---
 
-<p align="center">
-  <img src="resources/screenshots/04-agent.png" alt="DeepSeek V4 Pro 运行 Copilot 的 Agent 模式，执行工具调用" width="800">
-</p>
+## 🚀 快速开始
 
-### 安全优先
-API Key 存储在 VS Code 的 `SecretStorage` 中（macOS 钥匙串 / Windows 凭据管理器 / Linux 密钥环）。绝不会出现在 `settings.json` 中，也不会被提交到 Git 历史。
+### 前置要求
+- VS Code `1.116.0` 或更高版本。
+- GitHub Copilot 订阅（Free、Pro 或 Enterprise 均可）。
+- Anthropic API Key 或 Auth Token（或代理端点 Token）。
 
-### 零运行时依赖
-纯 VS Code API + Node.js 内置模块。无需 Python、Docker 或本地代理进程。
+### 安装与使用
 
-## 快速开始
+1. **安装插件**：
+   - 方式 1：在 VS Code 扩展视图中选择 `从 VSIX 安装...`，选择 `anthropic-for-copilot.vsix`。
+   - 方式 2：在终端运行：
+     ```bash
+     code --install-extension anthropic-for-copilot.vsix
+     ```
 
-### 前置条件
+2. **配置 API Key / Token**：
+   - 按 `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`) 打开命令面板，运行 **`Anthropic: 设置 API Key`**，输入 Key 或 Token。
+   - *或者*：在环境变量中设置 `ANTHROPIC_AUTH_TOKEN` 或 `ANTHROPIC_API_KEY`。
 
-- VS Code 1.116 及以上版本。本扩展依赖非公开的 Copilot Chat API，较新的 VS Code 版本可能存在兼容性问题——如遇到请[提交 Issue](https://github.com/Vizards/deepseek-v4-for-copilot/issues)。
-- GitHub Copilot 订阅（Free / Pro / Enterprise——免费版即可使用）
-- DeepSeek API Key，从 [platform.deepseek.com](https://platform.deepseek.com) 获取；使用自定义 `deepseek-copilot.baseUrl` 时也可使用兼容的 provider token
+3. **配置自定义 Base URL (可选)**：
+   - 如使用第三方中转代理或 CC-SWITCH，运行 **`Anthropic: 打开设置`**，在 `anthropic-copilot.baseUrl` 中填写代理端点。
 
-### 安装方式
+4. **开始对话**：
+   - 打开 Copilot Chat (`Ctrl+Alt+I`)，在模型选择器中切换到 **Sonnet 5**、**Opus 5** 或 **Fable 5.1**，畅享 1M 超长上下文！
 
-根据你所使用的编辑器选择对应的注册表安装：
+---
 
-1. **Microsoft VS Code** — 从 [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Vizards.deepseek-v4-for-copilot) 安装。
-2. **使用 Open VSX 的编辑器** — 从 [Open VSX](https://open-vsx.org/extension/Vizards/deepseek-v4-for-copilot) 安装。
+## ⚙️ 配置属性说明
 
-### 使用步骤
-
-1. 通过命令面板（`Cmd+Shift+P`）运行 **DeepSeek: 设置 API Key**
-2. 粘贴你的 Key 或兼容的 provider token（官方 DeepSeek Key 通常以 `sk-` 开头）
-3. 打开 Copilot Chat，点击模型选择器，选择 **DeepSeek V4 Flash**、**DeepSeek V4 Pro** 或 **DeepSeek V4 Flash Vision Exp**
-4. 搞定——开始聊天
-
-## 模型
-
-| 模型 | 图片处理 | 思考深度 | 适用场景 |
+| 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| **DeepSeek V4 Flash** | 视觉代理 | `停用` / `轻量` / `标准` / `深度` | 日常快速编码、小改动、低成本迭代 |
-| **DeepSeek V4 Pro** | 视觉代理 | `停用` / `轻量` / `标准` / `深度` | 复杂重构、Agent 任务、深度推理 |
-| **DeepSeek V4 Flash Vision Exp** | 原生图片输入 | `停用` / `轻量` / `标准` / `深度` | 直接、实验性的图片理解与快速推理 |
+| `anthropic-copilot.baseUrl` | `string` | `"https://api.anthropic.com"` | Anthropic API Base URL（支持自定义代理或 CC-SWITCH 端点） |
+| `anthropic-copilot.maxTokens` | `number` | `0` | 每次请求最大输出 Token 数（0 表示使用模型默认上限） |
+| `anthropic-copilot.modelIdOverrides` | `object` | `{}` | 自定义模型 ID 映射（用于代理服务端点不同模型名的场景） |
+| `anthropic-copilot.debugMode` | `string` | `"minimal"` | 诊断日志模式 (`minimal`, `metadata`, `verbose`) |
 
-三者均支持可选的思考模式、工具调用和 1M Token 上下文。Flash Vision Exp 仍是实验模型；直接使用时，自定义 API 端点或兼容服务商必须提供为它配置的模型 ID。
+---
 
-## 设置项
+## 🔒 安全与隐私
 
-| 设置项 | 默认值 | 说明 |
-|---|---|---|
-| `deepseek-copilot.baseUrl` | `https://api.deepseek.com` | API 端点——可改为自托管或代理部署地址 |
-| `deepseek-copilot.maxTokens` | `0` | 最大输出 Token 数（`0` = 不限制）。可用于成本控制 |
-| `deepseek-copilot.modelIdOverrides` | 预填官方 ID 映射 | DeepSeek V4 Flash、Pro 和 Flash Vision Exp 对应的 API 模型 ID。仅在使用模型名不同的兼容第三方 API 时修改 |
-| `deepseek-copilot.debugMode` | `minimal` | 诊断模式：`minimal` 仅上报 token 用量，`metadata` 输出隐私安全日志，`verbose` 将完整请求 dump 和 pipeline snapshot 写入扩展 global storage。完整 dump 可能包含敏感提示词文本、工具定义、文件片段和图片描述。使用 `DeepSeek: 打开请求 Dump 目录` 打开 dump 位置 |
-| `deepseek-copilot.visionModel` | *(自动)* | Flash 和 Pro 使用的视觉代理。自动模式会在可用时选择 Flash Vision Exp；也可通过 `DeepSeek: 配置视觉代理` 改用其他 VS Code 模型或 API 端点 |
-| `deepseek-copilot.visionPrompt` | *(内置)* | Flash/Pro 的视觉代理用于描述图片附件的提示词，不影响 Flash Vision Exp 的原生图片请求 |
-| `deepseek-copilot.experimental.stabilizeToolList` | `false` | 实验性设置。尝试预先激活 VS Code/Copilot 的虚拟工具，让传给 DeepSeek API 的 `tools` 参数在多轮对话中更完整、更稳定。当已启用工具跨轮次变化时，可能提高上下文缓存命中率。代价是 input tokens 可能增加；缓存命中的 input tokens 单价更低，但仍会计入用量。64 个或更少已启用工具时通常无需开启，除非工具列表仍在跨轮次变化；超过 128 个已启用工具时不建议开启 |
+- 所有 API Key 和 Token 均保存在 VS Code 的加密 `SecretStorage`（Windows 凭据管理器 / macOS Keychain / Linux Secret Service）中。
+- 零运行时依赖 — 仅使用 Node.js 原生 `fetch` 与 VS Code 标准 API，轻量安全。
 
-思考深度可通过 Copilot Chat 的模型选择器对每个 DeepSeek 模型单独设置。
+---
 
-兼容 API 代理的 `settings.json` 配置示例：
+## 📄 开源协议
 
-```json
-{
-  "deepseek-copilot.modelIdOverrides": {
-    "deepseek-v4-flash": "your-flash-model-id",
-    "deepseek-v4-pro": "your-pro-model-id",
-    "deepseek-v4-flash-vision-exp": "your-vision-model-id"
-  }
-}
-```
-
-## 方案对比
-
-| | 本扩展 | 本地代理（如 LiteLLM） | 独立 DeepSeek 扩展 |
-|---|---|---|---|
-| 在 Copilot Chat 内使用 | ✅ | ✅ | ❌ 独立界面 |
-| Agent 模式、工具、Skills | ✅ | ✅ | ⚠️ 自行实现 |
-| 视觉支持 | ✅ 原生 + 代理 | ❌ | ❌ |
-| 无需额外运行进程 | ✅ | ❌ | ✅ |
-| 一键安装 | ✅ | ❌ | ✅ |
-| API Key 存系统密钥链 | ✅ | ❌ | ⚠️ 各异 |
-
-## 许可证
-
-[MIT](LICENSE)
+[MIT License](LICENSE) © Luorj
