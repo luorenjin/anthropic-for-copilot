@@ -1,3 +1,4 @@
+export { buildMessagesEndpoint, normalizeSdkBaseUrl } from './base-url';
 export { AnthropicClient } from './core';
 export {
 	createHttpError,

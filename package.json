@@ -273,6 +273,37 @@
 						"%anthropic-copilot.config.debugMode.verbose.description%"
 					],
 					"markdownDescription": "%anthropic-copilot.config.debugMode.description%"
+				},
+				"anthropic-copilot.useClaudeCodeSettings": {
+					"type": "boolean",
+					"default": true,
+					"tags": [
+						"language-models"
+					],
+					"markdownDescription": "%anthropic-copilot.config.useClaudeCodeSettings.description%"
+				},
+				"anthropic-copilot.authScheme": {
+					"type": "string",
+					"default": "auto",
+					"tags": [
+						"language-models"
+					],
+					"enum": [
+						"auto",
+						"bearer",
+						"x-api-key"
+					],
+					"enumItemLabels": [
+						"%anthropic-copilot.config.authScheme.auto.label%",
+						"%anthropic-copilot.config.authScheme.bearer.label%",
+						"%anthropic-copilot.config.authScheme.xApiKey.label%"
+					],
+					"markdownEnumDescriptions": [
+						"%anthropic-copilot.config.authScheme.auto.description%",
+						"%anthropic-copilot.config.authScheme.bearer.description%",
+						"%anthropic-copilot.config.authScheme.xApiKey.description%"
+					],
+					"markdownDescription": "%anthropic-copilot.config.authScheme.description%"
 				}
 			}
 		}
@@ -282,12 +313,13 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run clean && tsc -p ./",
 		"compile:tests": "tsc -p tests/tsconfig.json",
-		"test": "npm run compile:tests && node --require ./tests/mock-vscode.js --test out/tests/proxy.test.js",
+		"test": "npm run compile:tests && node --require ./tests/mock-vscode.js --test \"out/tests/unit/*.test.js\"",
 		"watch": "npm run clean && tsc -watch -p ./",
 		"lint": "oxlint",
 		"format": "oxfmt --write src/",
 		"format:check": "oxfmt --check src/",
-		"package": "vsce package -o dist/"
+		"package": "node -e \"require('node:fs').mkdirSync('dist',{recursive:true})\" && vsce package -o dist/anthropic-for-copilot.vsix",
+		"test:live": "npm run compile:tests && node --require ./tests/mock-vscode.js --test \"out/tests/live/*.test.js\""
 	},
 	"devDependencies": {
 		"@types/node": "^26.5.0",

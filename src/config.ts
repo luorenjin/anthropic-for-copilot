@@ -1,31 +1,105 @@
 import vscode from 'vscode';
+import { readClaudeCodeEnvCached } from './claude-code';
 import { CONFIG_SECTION, MODELS } from './consts';
+import type { CredentialSchemeSetting } from './credentials';
 import type { ModelDefinition } from './types';
 
 export type DebugMode = 'minimal' | 'metadata' | 'verbose';
+
+const DEFAULT_BASE_URL = 'https://api.anthropic.com';
+
+/**
+ * Claude Code stores its provider configuration in the `env` block of
+ * `~/.claude/settings.json` and injects it only into its own child processes,
+ * so a normally launched VS Code sees none of it. Reading that file lets one
+ * configuration serve both tools; it takes precedence so switching relays in
+ * Claude Code moves the extension too.
+ */
+function getClaudeCodeEnvValue(...names: string[]): string | undefined {
+	if (!getUseClaudeCodeSettings()) {
+		return undefined;
+	}
+	const env = readClaudeCodeEnvCached();
+	for (const name of names) {
+		const value = env[name]?.trim();
+		if (value) {
+			return value;
+		}
+	}
+	return undefined;
+}
+
+function getProcessEnvValue(...names: string[]): string | undefined {
+	for (const name of names) {
+		const value = process.env[name]?.trim();
+		if (value) {
+			return value;
+		}
+	}
+	return undefined;
+}
+
+/** Environment value from the Claude Code settings file, else the real environment. */
+export function getEnvValue(...names: string[]): string | undefined {
+	return getClaudeCodeEnvValue(...names) ?? getProcessEnvValue(...names);
+}
+
+export function getUseClaudeCodeSettings(): boolean {
+	try {
+		return (
+			vscode.workspace
+				?.getConfiguration?.(CONFIG_SECTION)
+				?.get<boolean>('useClaudeCodeSettings', true) ?? true
+		);
+	} catch {
+		return true;
+	}
+}
+
+/** How the credential is placed on the wire; `auto` derives it from its source. */
+export function getAuthScheme(): CredentialSchemeSetting {
+	const value = vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>('authScheme', 'auto');
+	return value === 'bearer' || value === 'x-api-key' ? value : 'auto';
+}
 
 /**
  * Get Anthropic API base URL from settings.
  * Falls back to official endpoint when not configured.
  */
 export function getBaseUrl(): string {
+	const claudeCodeUrl = getClaudeCodeEnvValue(
+		'ANTHROPIC_BASE_URL',
+		'ANTHROPIC_API_URL',
+		'CLAUDE_BASE_URL',
+	);
+	if (claudeCodeUrl) {
+		return claudeCodeUrl;
+	}
+
 	const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
 	const settingUrl = config.get<string>('baseUrl')?.trim();
-	if (settingUrl && settingUrl !== 'https://api.anthropic.com') {
+	if (settingUrl && settingUrl !== DEFAULT_BASE_URL) {
 		return settingUrl;
 	}
 
-	const envBaseUrl =
-		process.env.ANTHROPIC_BASE_URL ||
-		process.env.ANTHROPIC_API_URL ||
-		process.env.CLAUDE_BASE_URL;
-
-	if (envBaseUrl?.trim()) {
-		return envBaseUrl.trim();
+	const envBaseUrl = getProcessEnvValue(
+		'ANTHROPIC_BASE_URL',
+		'ANTHROPIC_API_URL',
+		'CLAUDE_BASE_URL',
+	);
+	if (envBaseUrl) {
+		return envBaseUrl;
 	}
 
-	return settingUrl || 'https://api.anthropic.com';
+	return settingUrl || DEFAULT_BASE_URL;
 }
+
+const MODEL_ID_ENV_VARS: ReadonlyArray<{ ids: readonly string[]; variable: string }> = [
+	{ ids: ['claude-sonnet-5'], variable: 'ANTHROPIC_DEFAULT_SONNET_MODEL' },
+	{ ids: ['claude-opus-5'], variable: 'ANTHROPIC_DEFAULT_OPUS_MODEL' },
+	{ ids: ['claude-fable-5-1', 'claude-fable-5.1'], variable: 'ANTHROPIC_DEFAULT_FABLE_MODEL' },
+	{ ids: ['claude-haiku-4-5', 'claude-haiku-4.5'], variable: 'ANTHROPIC_DEFAULT_HAIKU_MODEL' },
+];
 
 /**
  * Resolve the API model ID to send to the endpoint.
@@ -41,23 +115,12 @@ export function getApiModelId(vscodeModelId: string): string {
 		return override;
 	}
 
-	if (vscodeModelId === 'claude-sonnet-5' && process.env.ANTHROPIC_DEFAULT_SONNET_MODEL?.trim()) {
-		return process.env.ANTHROPIC_DEFAULT_SONNET_MODEL.trim();
-	}
-	if (vscodeModelId === 'claude-opus-5' && process.env.ANTHROPIC_DEFAULT_OPUS_MODEL?.trim()) {
-		return process.env.ANTHROPIC_DEFAULT_OPUS_MODEL.trim();
-	}
-	if (
-		(vscodeModelId === 'claude-fable-5-1' || vscodeModelId === 'claude-fable-5.1') &&
-		process.env.ANTHROPIC_DEFAULT_FABLE_MODEL?.trim()
-	) {
-		return process.env.ANTHROPIC_DEFAULT_FABLE_MODEL.trim();
-	}
-	if (
-		(vscodeModelId === 'claude-haiku-4-5' || vscodeModelId === 'claude-haiku-4.5') &&
-		process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL?.trim()
-	) {
-		return process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL.trim();
+	const envDefault = MODEL_ID_ENV_VARS.find((entry) => entry.ids.includes(vscodeModelId));
+	if (envDefault) {
+		const value = getEnvValue(envDefault.variable);
+		if (value) {
+			return value;
+		}
 	}
 
 	return vscodeModelId;
@@ -73,12 +136,23 @@ export function getCustomModels(): ModelDefinition[] {
 
 	const models: ModelDefinition[] = [];
 	for (const item of raw) {
-		if (typeof item === 'object' && item !== null && typeof item.id === 'string' && item.id.trim()) {
+		if (
+			typeof item === 'object' &&
+			item !== null &&
+			typeof item.id === 'string' &&
+			item.id.trim()
+		) {
 			const id = item.id.trim();
 			const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : id;
 			const detail = typeof item.detail === 'string' ? item.detail : `Anthropic model ${name}`;
-			const maxInputTokens = typeof item.maxInputTokens === 'number' && item.maxInputTokens > 0 ? item.maxInputTokens : 1000000;
-			const maxOutputTokens = typeof item.maxOutputTokens === 'number' && item.maxOutputTokens > 0 ? item.maxOutputTokens : 64000;
+			const maxInputTokens =
+				typeof item.maxInputTokens === 'number' && item.maxInputTokens > 0
+					? item.maxInputTokens
+					: 1000000;
+			const maxOutputTokens =
+				typeof item.maxOutputTokens === 'number' && item.maxOutputTokens > 0
+					? item.maxOutputTokens
+					: 64000;
 
 			models.push({
 				id,
@@ -134,10 +208,7 @@ export function getAllModels(): ModelDefinition[] {
 				allMap.has(k) ||
 				allMap.has(normalizedK) ||
 				MODELS.some(
-					(m) =>
-						m.id === k ||
-						m.id === normalizedK ||
-						m.id.replace(/\./g, '-') === normalizedK,
+					(m) => m.id === k || m.id === normalizedK || m.id.replace(/\./g, '-') === normalizedK,
 				);
 
 			if (!isExisting) {
@@ -253,8 +324,9 @@ export function getCustomHeaders(): Record<string, string> {
 		}
 	};
 
-	if (process.env.ANTHROPIC_CUSTOM_HEADERS?.trim()) {
-		parseHeaderString(process.env.ANTHROPIC_CUSTOM_HEADERS);
+	const processEnvHeaders = getProcessEnvValue('ANTHROPIC_CUSTOM_HEADERS');
+	if (processEnvHeaders) {
+		parseHeaderString(processEnvHeaders);
 	}
 
 	if (typeof settingValue === 'string') {
@@ -265,6 +337,11 @@ export function getCustomHeaders(): Record<string, string> {
 				headers[k.trim()] = v.trim();
 			}
 		}
+	}
+
+	const claudeCodeHeaders = getClaudeCodeEnvValue('ANTHROPIC_CUSTOM_HEADERS');
+	if (claudeCodeHeaders) {
+		parseHeaderString(claudeCodeHeaders);
 	}
 
 	return headers;

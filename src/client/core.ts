@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { CancellationToken } from 'vscode';
 import { getCustomHeaders } from '../config';
+import { buildSdkAuth, CLAUDE_CODE_IDENTITY_SYSTEM_PROMPT, type Credential } from '../credentials';
 import { safeStringify } from '../json';
 import { logger } from '../logger';
 import type {
@@ -9,6 +10,7 @@ import type {
 	AnthropicUsage,
 	StreamCallbacks,
 } from '../types';
+import { buildMessagesEndpoint, normalizeSdkBaseUrl } from './base-url';
 import { formatRequestError, normalizeRequestError, sanitizeHeaders } from './error';
 
 /**
@@ -19,26 +21,15 @@ export class AnthropicClient {
 
 	constructor(
 		private readonly baseUrl: string,
-		private readonly apiKey: string,
+		private readonly credential: Credential | undefined,
 	) {
-		const customHeaders = getCustomHeaders();
-		const sdkBaseUrl = normalizeSdkBaseUrl(this.baseUrl);
-
-		const hasCustomAuthHeader = Object.keys(customHeaders).some((k) =>
-			['x-litellm-api-key', 'authorization', 'x-api-key', 'api-key'].includes(k.toLowerCase()),
-		);
-
-		const defaultHeaders: Record<string, string | null> = { ...customHeaders };
-		if (hasCustomAuthHeader) {
-			defaultHeaders['x-api-key'] = null;
-			defaultHeaders['authorization'] = null;
-			defaultHeaders['Authorization'] = null;
-		}
+		const auth = buildSdkAuth(credential, getCustomHeaders());
 
 		this.sdk = new Anthropic({
-			apiKey: this.apiKey || 'none',
-			baseURL: sdkBaseUrl,
-			defaultHeaders: defaultHeaders as any,
+			apiKey: auth.apiKey,
+			authToken: auth.authToken,
+			baseURL: normalizeSdkBaseUrl(this.baseUrl),
+			defaultHeaders: auth.defaultHeaders,
 		});
 	}
 
@@ -51,36 +42,21 @@ export class AnthropicClient {
 		cancellationToken?: CancellationToken,
 	): Promise<void> {
 		const customHeaders = getCustomHeaders();
-		const hasCustomAuthHeader = Object.keys(customHeaders).some((k) =>
-			['x-litellm-api-key', 'authorization', 'x-api-key', 'api-key'].includes(k.toLowerCase()),
-		);
-
-		const headers: Record<string, string | null> = {
-			'Content-Type': 'application/json',
-			'anthropic-version': '2023-06-01',
-			...customHeaders,
-		};
-
-		if (!hasCustomAuthHeader && this.apiKey) {
-			headers['x-api-key'] = this.apiKey;
-			headers['Authorization'] = `Bearer ${this.apiKey}`;
+		const requestHeaders: Record<string, string> = {};
+		if (request.betas?.length) {
+			requestHeaders['anthropic-beta'] = request.betas.join(',');
 		}
+		Object.assign(requestHeaders, customHeaders);
 
-		const headersForLog: Record<string, string> = {};
-		for (const [k, v] of Object.entries(headers)) {
-			if (v !== null) {
-				headersForLog[k] = v;
-			}
-		}
-
-		const sanitizedCustom = sanitizeHeaders(customHeaders);
-		const sanitizedAll = sanitizeHeaders(headersForLog);
-		const endpoint = normalizeAnthropicMessagesEndpoint(this.baseUrl);
+		const endpoint = buildMessagesEndpoint(this.baseUrl);
+		const authSummary = describeAuth(this.credential, customHeaders);
 
 		logger.info(
 			`Initiating Anthropic SDK request: endpoint="${endpoint}" model="${request.model}" ` +
-				`customHeaders=${safeStringify(sanitizedCustom)} ` +
-				`requestHeaders=${safeStringify(sanitizedAll)}`,
+				`auth=${authSummary} ` +
+				`betas=${request.betas?.join(',') || 'none'} ` +
+				`system=${describeSystem(request.system)} ` +
+				`customHeaders=${safeStringify(sanitizeHeaders(customHeaders))}`,
 		);
 
 		const pendingToolCalls = new Map<number, AnthropicToolCall>();
@@ -100,7 +76,7 @@ export class AnthropicClient {
 					top_p: request.top_p,
 				},
 				{
-					headers: customHeaders,
+					headers: requestHeaders,
 				},
 			);
 
@@ -207,7 +183,7 @@ export class AnthropicClient {
 			const normalizedError = normalizeRequestError(error, {
 				baseUrl: this.baseUrl,
 				request,
-				headers: headersForLog,
+				headers: { 'anthropic-auth': authSummary },
 				customHeaders,
 			});
 			logger.error('Anthropic SDK request failed:', formatRequestError(normalizedError));
@@ -216,23 +192,48 @@ export class AnthropicClient {
 	}
 }
 
-function normalizeSdkBaseUrl(baseUrl: string): string {
-	const trimmed = baseUrl.trim().replace(/\/+$/, '');
-	if (trimmed.endsWith('/v1/messages')) {
-		return trimmed.slice(0, -'/messages'.length);
+/**
+ * Describes the credential actually put on the wire. Reporting a header map
+ * the client never sends makes auth failures impossible to diagnose.
+ */
+function describeAuth(
+	credential: Credential | undefined,
+	customHeaders: Record<string, string>,
+): string {
+	const overridden = Object.keys(customHeaders).find((key) =>
+		['authorization', 'x-api-key'].includes(key.toLowerCase()),
+	);
+	if (overridden) {
+		return `custom-header(${overridden.toLowerCase()})`;
 	}
-	if (trimmed.endsWith('/messages')) {
-		return trimmed.slice(0, -'/messages'.length);
+	if (!credential) {
+		return 'none';
 	}
-	if (trimmed === 'https://api.anthropic.com') {
-		return 'https://api.anthropic.com/v1';
-	}
-	return trimmed;
+	return `${credential.scheme}(from ${credential.origin})`;
 }
 
-function normalizeAnthropicMessagesEndpoint(baseUrl: string): string {
-	const sdkBaseUrl = normalizeSdkBaseUrl(baseUrl);
-	return `${sdkBaseUrl}/messages`;
+/**
+ * Summarizes the system prompt actually being sent, without logging its full
+ * content. An OAuth access token 429s unless `system[0]` is *exactly* the
+ * Claude Code identity line as its own block — merely containing that text
+ * somewhere in a single concatenated string still 429s. `identity=strict`
+ * confirms the isolated-block form; `identity=loose` flags the
+ * looks-right-but-still-fails concatenated form so it's visible from the log
+ * alone, without needing to reproduce against the relay again.
+ */
+function describeSystem(system: AnthropicRequest['system']): string {
+	if (!system) {
+		return 'none';
+	}
+	const blocks = typeof system === 'string' ? [system] : system.map((b) => b.text);
+	const chars = blocks.reduce((sum, b) => sum + b.length, 0);
+	let identity: 'strict' | 'loose' | 'no' = 'no';
+	if (blocks[0] === CLAUDE_CODE_IDENTITY_SYSTEM_PROMPT) {
+		identity = 'strict';
+	} else if (blocks.some((b) => b.includes(CLAUDE_CODE_IDENTITY_SYSTEM_PROMPT))) {
+		identity = 'loose';
+	}
+	return `chars=${chars} identity=${identity}`;
 }
 
 function flushPendingToolCalls(
@@ -274,7 +275,8 @@ function reportFinalUsage(callbacks: StreamCallbacks, usage: AnthropicUsage): vo
 
 function isAbortError(error: unknown): boolean {
 	return (
-		(error instanceof Error && (error.name === 'AbortError' || error.name === 'APIUserAbortError')) ||
+		(error instanceof Error &&
+			(error.name === 'AbortError' || error.name === 'APIUserAbortError')) ||
 		(typeof error === 'object' && error !== null && (error as any).name === 'APIUserAbortError')
 	);
 }

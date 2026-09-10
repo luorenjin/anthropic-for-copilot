@@ -1,10 +1,13 @@
 import vscode from 'vscode';
+import { getAuthScheme, getBaseUrl, getEnvValue } from './config';
 import { API_KEY_SECRET } from './consts';
+import { resolveCredentialScheme, type Credential, type CredentialOrigin } from './credentials';
 import { t } from './i18n';
 
 /**
- * Manages Anthropic API key & auth token via VS Code SecretStorage (secure),
- * environment variables (ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY), and extension settings.
+ * Manages the Anthropic credential across VS Code SecretStorage, the
+ * `~/.claude/settings.json` env block, real environment variables, and
+ * extension settings.
  */
 export class AuthManager {
 	private readonly secretStorage: vscode.SecretStorage;
@@ -14,36 +17,34 @@ export class AuthManager {
 	}
 
 	/**
-	 * Get API key / Auth Token.
-	 * Strict 2-choose-1 (互斥二选一) Rule:
-	 * 1. If ANTHROPIC_AUTH_TOKEN is set, use it exclusively (ANTHROPIC_API_KEY is ignored).
-	 * 2. If ANTHROPIC_AUTH_TOKEN is NOT set, check ANTHROPIC_API_KEY.
-	 * 3. SecretStorage (user set explicitly in VS Code UI)
-	 * 4. Extension setting anthropic-copilot.apiKey
+	 * Resolve the credential together with the header scheme it must be sent
+	 * under. Relays commonly accept only `Authorization: Bearer`, so losing the
+	 * distinction between an auth token and an API key silently breaks them.
+	 *
+	 * Precedence, mutually exclusive at each step:
+	 * 1. `ANTHROPIC_AUTH_TOKEN` / `CLAUDE_AUTH_TOKEN` — sent as a bearer token
+	 * 2. `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY` — sent as `x-api-key`
+	 * 3. SecretStorage (`Anthropic: Set API Key`)
+	 * 4. The `anthropic-copilot.apiKey` setting
 	 */
-	async getApiKey(): Promise<string | undefined> {
-		const authTokenEnv = process.env.ANTHROPIC_AUTH_TOKEN || process.env.CLAUDE_AUTH_TOKEN;
-		if (authTokenEnv?.trim()) {
-			return authTokenEnv.trim();
+	async getCredential(): Promise<Credential | undefined> {
+		const baseUrl = getBaseUrl();
+		const setting = getAuthScheme();
+
+		const resolved =
+			readEnvCredential('auth-token-env', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_AUTH_TOKEN') ??
+			readEnvCredential('api-key-env', 'ANTHROPIC_API_KEY', 'CLAUDE_API_KEY') ??
+			(await this.readStoredCredential());
+
+		if (!resolved) {
+			return undefined;
 		}
 
-		const apiKeyEnv = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
-		if (apiKeyEnv?.trim()) {
-			return apiKeyEnv.trim();
-		}
-
-		const secretKey = await this.secretStorage.get(API_KEY_SECRET);
-		if (secretKey?.trim()) {
-			return secretKey.trim();
-		}
-
-		const config = vscode.workspace.getConfiguration('anthropic-copilot');
-		const settingsKey = config.get<string>('apiKey');
-		if (settingsKey?.trim()) {
-			return settingsKey.trim();
-		}
-
-		return undefined;
+		return {
+			value: resolved.value,
+			origin: resolved.origin,
+			scheme: resolveCredentialScheme(resolved.origin, baseUrl, setting),
+		};
 	}
 
 	/**
@@ -64,8 +65,7 @@ export class AuthManager {
 	 * Check if an API key or auth token is available.
 	 */
 	async hasApiKey(): Promise<boolean> {
-		const key = await this.getApiKey();
-		return key !== undefined && key.length > 0;
+		return (await this.getCredential()) !== undefined;
 	}
 
 	/**
@@ -93,4 +93,35 @@ export class AuthManager {
 
 		return false;
 	}
+
+	private async readStoredCredential(): Promise<
+		{ value: string; origin: CredentialOrigin } | undefined
+	> {
+		const secretKey = await this.secretStorage.get(API_KEY_SECRET);
+		if (secretKey?.trim()) {
+			return { value: secretKey.trim(), origin: 'secret-storage' };
+		}
+
+		const settingsKey = vscode.workspace
+			.getConfiguration('anthropic-copilot')
+			.get<string>('apiKey');
+		if (settingsKey?.trim()) {
+			return { value: settingsKey.trim(), origin: 'setting' };
+		}
+
+		return undefined;
+	}
+}
+
+function readEnvCredential(
+	origin: CredentialOrigin,
+	...names: string[]
+): { value: string; origin: CredentialOrigin } | undefined {
+	for (const name of names) {
+		const value = getEnvValue(name);
+		if (value) {
+			return { value, origin };
+		}
+	}
+	return undefined;
 }

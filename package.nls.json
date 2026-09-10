@@ -33,5 +33,13 @@
 	"anthropic-copilot.config.modelIdOverrides.claude-haiku-4.5.description": "API model ID for Haiku 4.5",
 	"anthropic-copilot.config.customModels.description": "Define additional custom Anthropic/Claude models with custom display names to expose in Copilot Chat.",
 	"anthropic-copilot.config.visionModel.description": "Vision Proxy used when native image input is unavailable.",
-	"anthropic-copilot.config.customHeaders.description": "Custom HTTP headers included with every Anthropic API request (e.g. for proxy gateways like LiteLLM/CC-Switch)."
+	"anthropic-copilot.config.customHeaders.description": "Custom HTTP headers included with every Anthropic API request (e.g. for proxy gateways like LiteLLM/CC-Switch).",
+	"anthropic-copilot.config.useClaudeCodeSettings.description": "Read provider configuration from the `env` block of `~/.claude/settings.json`, the file Claude Code and CC-Switch already use. Values found there take precedence over the settings in this extension, so one configuration serves both tools. Claude Code injects those variables only into its own processes, so VS Code cannot see them otherwise.",
+	"anthropic-copilot.config.authScheme.description": "Which HTTP header carries your credential. Most third-party relays accept only `Authorization: Bearer`; sending the wrong one usually surfaces as a billing or quota error rather than an auth error.",
+	"anthropic-copilot.config.authScheme.auto.label": "Automatic",
+	"anthropic-copilot.config.authScheme.bearer.label": "Authorization: Bearer",
+	"anthropic-copilot.config.authScheme.xApiKey.label": "x-api-key",
+	"anthropic-copilot.config.authScheme.auto.description": "Derive from the credential source: `ANTHROPIC_AUTH_TOKEN` uses Bearer, `ANTHROPIC_API_KEY` uses x-api-key, and a stored key uses x-api-key on the official endpoint or Bearer on a custom one.",
+	"anthropic-copilot.config.authScheme.bearer.description": "Always send `Authorization: Bearer <token>`.",
+	"anthropic-copilot.config.authScheme.xApiKey.description": "Always send `x-api-key: <key>`."
 }

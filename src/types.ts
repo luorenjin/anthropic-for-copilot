@@ -102,6 +102,8 @@ export interface AnthropicRequest {
 	tool_choice?: { type: 'auto' | 'any' | 'tool'; name?: string } | 'none' | 'auto' | 'required';
 	thinking?: AnthropicThinkingConfig | { type: 'enabled' | 'disabled' };
 	reasoning_effort?: ReasoningEffort;
+	/** Anthropic beta flags sent as the `anthropic-beta` header. */
+	betas?: string[];
 }
 
 export interface AnthropicToolCall {
@@ -112,7 +114,6 @@ export interface AnthropicToolCall {
 		arguments: string;
 	};
 }
-
 
 // ---- Stream callbacks ----
 

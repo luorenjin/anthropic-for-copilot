@@ -1,0 +1,100 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project overview
+
+VS Code extension that implements `vscode.LanguageModelChatProvider` (vendor id `anthropic`) so Anthropic Claude models (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5, plus user-defined custom models) appear directly in the native GitHub Copilot Chat model picker. The extension is a translation layer between VS Code's Language Model Chat API and Anthropic's Messages API — it does not implement any chat UI itself; Copilot Chat's UI, agent mode, and tool calling are reused as-is.
+
+Node >= 24 is required (see `.nvmrc`); no bundler is used, `tsc` compiles `src/` straight to `out/`.
+
+## Commands
+
+- `npm run compile` — clean `out/` and run `tsc -p ./` (what `vscode:prepublish` runs before packaging)
+- `npm run watch` — same as compile but in `tsc -watch` mode
+- `npm run lint` — `oxlint` (config: `.oxlintrc.json`)
+- `npm run format` / `npm run format:check` — `oxfmt` over `src/` (tabs, single quotes — see `.oxfmtrc.json`)
+- `npm test` — compiles `tests/` (via `tests/tsconfig.json`) then runs the offline suite in `tests/unit/`
+- `npm run test:live` — the network integration test in `tests/live/` (needs real credentials; not run by CI)
+- `npm run package` — `vsce package -o dist/` produces the installable `.vsix`
+
+In VS Code, F5 (`Run Extension (Current VS Code)` launch config) starts an Extension Development Host with `npm: watch` as the pre-launch task.
+
+CI (`.github/workflows/ci.yml`) runs lint, format:check, compile, `npm test`, and package. Only the offline suite runs there; `test:live` is never run by CI.
+
+### Tests
+
+`tests/unit/` is the offline suite and the one CI gates on. `tests/mock-vscode.js` is preloaded via `--require`; it patches `Module.prototype.require` to stub the `vscode` module and exposes `globalThis.__vscodeMock` so a test can drive settings by full id (`__vscodeMock.config['anthropic-copilot.customHeaders'] = ...`) and `reset()` between cases. Most logic under test lives in vscode-free modules (`src/credentials.ts`, `src/model-id.ts`, `src/claude-code.ts`, `src/client/base-url.ts`) so it can be imported directly.
+
+`tests/unit/client-wire.test.ts` is the important one: it stubs `globalThis.fetch`, builds a real `AnthropicClient`, and asserts the headers that actually reach the wire. The SDK resolves its fetch implementation **in the constructor**, so the stub must be installed before the client is built — that is why the helper takes a factory rather than an instance. Any test touching `config.ts` must also set `anthropic-copilot.useClaudeCodeSettings` to `false`, or it will read the developer's real `~/.claude/settings.json`.
+
+`tests/live/proxy.test.ts` opens a real streaming connection to an Anthropic-compatible endpoint (`ANTHROPIC_BASE_URL`) using real credentials and fails immediately if none are set. Keep it out of the default `npm test` path.
+
+## Architecture
+
+### Activation flow
+
+`src/extension.ts` re-exports `activate`/`deactivate` from `src/runtime/lifecycle.ts`, which on activation: initializes diagnostics, registers commands (`runtime/commands.ts`), registers URI handlers for deep-linked actions (`runtime/actions.ts` — e.g. `vscode://<ext-id>/setApiKey`, used by error messages and notices to link back into the extension), then builds and registers the provider (`runtime/provider.ts`), which constructs `AnthropicChatProvider` and calls `vscode.lm.registerLanguageModelChatProvider('anthropic', provider)`. It also nudges `github.copilot-chat` to activate so the model picker refreshes promptly, and shows the walkthrough on first run (`runtime/welcome.ts`).
+
+### The provider (`src/provider/index.ts`)
+
+`AnthropicChatProvider` implements the three `LanguageModelChatProvider` methods:
+
+- **`provideLanguageModelChatInformation`** — returns the model list. `getAllModels()` (`config.ts`) merges the built-in `MODELS` array (`consts.ts`) with user `customModels` and any *new* keys found in `modelIdOverrides` (auto-registered as custom models so pointing an override at an unknown ID doesn't hide it from the picker). Pricing/currency display comes from `pricing/currency.ts` + `pricing/schedule.ts` and is cosmetic only. Fires `onDidChangeLanguageModelChatInformation` (debounced 300ms) whenever relevant settings/secrets change.
+- **`provideLanguageModelChatResponse`** — the per-turn pipeline, in order:
+  1. `resolveConversationSegment` (`provider/segment.ts`) and `classifyProviderRequest` (`provider/routing/`) — used only for diagnostics/logging grouping.
+  2. `dumpProviderInput` (`provider/debug/dump.ts`) — writes raw provider input to disk under `context.globalStorageUri` when `debugMode` is `verbose`.
+  3. `processToolFlow` (`provider/tools/flow.ts`) — the experimental `stabilizeToolList` preflight. It can short-circuit the whole call (`preflightHandled: true`) by emitting synthetic tool-call parts that pre-activate Copilot's `activate_*` virtual tools across bounded rounds (`MAX_PREFLIGHT_ROUNDS_PER_USER_REQUEST`), so the `tools` array Anthropic sees is complete/stable turn-to-turn (stability matters for Anthropic's prompt cache — see `docs/notices/tool-drift.*.md`).
+  4. `prepareChatRequest` (`provider/request.ts`) — resolves the API key (`AuthManager`), builds an `AnthropicClient`, resolves vision input (`provider/vision/`), converts VS Code messages/tools to Anthropic's schema (`provider/convert.ts`), and derives a thinking token budget from the requested reasoning effort.
+  5. `streamChatCompletion` (`provider/stream.ts`) — drives `AnthropicClient.streamChatCompletion`'s callbacks, translating Anthropic SSE events into `vscode.LanguageModelTextPart` / `LanguageModelThinkingPart` / `LanguageModelToolCallPart` progress reports, and reports a trailing replay-marker part plus a Copilot-usage data part once the stream ends.
+- **`provideTokenCount`** — a chars-per-token heuristic that self-calibrates from each turn's real `usage` numbers (see `updateCharsPerToken` in `stream.ts`); skipped when the turn included native images, since image tokens break the char-ratio estimate.
+
+### Auth & config resolution (`src/auth.ts`, `src/config.ts`, `src/credentials.ts`, `src/claude-code.ts`)
+
+This project targets "BYOK behind a relay" setups (Claude Code, CC-Switch, LiteLLM), which drives two decisions that are easy to break.
+
+**The credential carries a scheme, not just a value.** `AuthManager.getCredential()` returns a `Credential` — `{ value, scheme, origin }` — because relays commonly accept *only* `Authorization: Bearer` and reject `x-api-key`. When that distinction is lost the relay falls back to its own upstream account and the failure surfaces as a **billing error** ("Your credit balance is too low"), not an auth error, which makes it very hard to diagnose. `resolveCredentialScheme()` maps `*_AUTH_TOKEN` to bearer, `*_API_KEY` to x-api-key, and a stored key to x-api-key on the official endpoint or bearer elsewhere; `anthropic-copilot.authScheme` overrides it.
+
+**Relay side-channel headers coexist with the credential.** `buildSdkAuth()` only stands down when the user supplies `authorization` or `x-api-key` themselves. A header like `x-litellm-api-key` authenticates the caller *to the relay* and must be sent alongside the Anthropic credential — treating it as a replacement is what caused the billing error above. The unused SDK field is set to an explicit `null`, because the SDK silently reads `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` from the environment when it is `undefined`.
+
+**Resolution order.** `~/.claude/settings.json` (its `env` block) → real `process.env` → VS Code settings. Claude Code injects that `env` block only into its own child processes, so a VS Code launched from the Start Menu sees none of those variables; reading the file directly (`src/claude-code.ts`, mtime-cached, JSONC-tolerant) lets one configuration serve both tools. Disable with `anthropic-copilot.useClaudeCodeSettings`. The one exception is `getBaseUrl()`, where an explicitly changed `baseUrl` setting still beats `process.env` — Claude Code settings outrank both.
+
+- **API key**: `ANTHROPIC_AUTH_TOKEN`/`CLAUDE_AUTH_TOKEN` (bearer, used exclusively when present) → `ANTHROPIC_API_KEY`/`CLAUDE_API_KEY` (x-api-key) → `SecretStorage` → `anthropic-copilot.apiKey`.
+- **Model ID**: `modelIdOverrides` → `ANTHROPIC_DEFAULT_{SONNET,OPUS,FABLE,HAIKU}_MODEL` → the VS Code model id.
+- **Custom headers** (`customHeaders` setting / `ANTHROPIC_CUSTOM_HEADERS`, JSON or `Key: Value` lines).
+- `getDebugMode()` reads `debugMode`; the legacy boolean `debug` setting is migrated to `debugMode: metadata` on activation.
+
+### Model IDs and betas (`src/model-id.ts`)
+
+`[1M]` is a **Claude Code client-side convention**, not an Anthropic model name — the real API answers `404 not_found_error` for `claude-sonnet-5[1M]`. `parseModelId()` strips the suffix and returns the `context-1m-2025-08-07` beta instead, which the client sends as `anthropic-beta`. This is what makes `modelIdOverrides` and `ANTHROPIC_DEFAULT_*_MODEL` copy-paste compatible with a Claude Code config.
+
+### Base URL (`src/client/base-url.ts`)
+
+The SDK posts to `/v1/messages` *relative to* `baseURL`, so `normalizeSdkBaseUrl()` strips any trailing `/v1/messages`, `/messages`, or `/v1` the user pasted. Adding a `/v1` here instead produces `…/v1/v1/messages`. Use `buildMessagesEndpoint()` when logging the target — never reconstruct it by hand.
+
+### Vision (`src/provider/vision/`)
+
+The most involved subsystem. Two image-handling modes, chosen per model by `capabilities.nativeImageInput`:
+
+- **native** — images are forwarded as-is inside the Anthropic request (model supports vision natively).
+- **proxy** — the model has no native vision, so images are replaced with a text description produced by a separate "vision describer" before the request is built (`pipeline.ts` → `resolve.ts`).
+
+Describer sources (`service.ts`, configured via `Anthropic: Set Vision Model` / the `anthropic-copilot.visionModel` setting, with a webview config panel under `ui/`):
+- `vscode-lm` — delegates description to another installed VS Code language model.
+- `api-endpoint` — calls an external OpenAI- or Anthropic-compatible vision endpoint (`protocols/providers/{anthropic,openai}/`), with its own stored API key (`sources/endpoint/config.ts`).
+
+Because VS Code's chat history is opaque/text-only between turns, resolved vision text (and accumulated reasoning) is round-tripped through **replay markers** (`src/provider/replay/`): an invisible `LanguageModelDataPart` (mime `REPLAY_MARKER_MIME`) appended to the assistant's response, parsed back out of history on the next turn (`parseFirstReplayMarker`) so old image messages don't need to be re-described or re-sent. `resolve.ts` only actually describes/forwards the *most recent* image message; older ones are satisfied from their replay marker or dropped — see the counters in `stats.ts` for exactly what happened to each message.
+
+### Other subsystems
+
+- **`provider/pricing/`** — `currency.ts`'s `BalanceCurrencyResolver` queries the official Anthropic balance API (only when `baseUrl` is the official host) to decide whether to display USD or CNY pricing in the model picker, caching the result in extension global state; `schedule.ts` resolves the current peak/off-peak pricing tier from `MODELS[].pricing`.
+- **`provider/debug/`** — `verbose` debug mode dumps full request/response payloads (hashed/truncated) to disk under global storage, browsable via `Anthropic: Open Request Dumps Folder`; `diagnostics.ts`'s cache-diagnostics recorder tracks Anthropic prompt-cache hit/miss behavior per request for troubleshooting cache misses caused by e.g. unstable tool lists or changing vision marker text.
+- **`i18n.ts`** — an in-house zero-dependency `t()` lookup keyed off `vscode.env.language` (English default, `zh-cn` translated); separate from `package.nls.json`/`package.nls.zh-cn.json`, which localize static `package.json` contribution strings via `%key%` placeholders.
+- **`client/`** — `AnthropicClient` (`core.ts`) wraps `@anthropic-ai/sdk`'s streaming `messages.stream()` call; `error/` normalizes SDK/network errors into user-facing messages and sanitizes headers before logging.
+
+### Module layout convention
+
+Most directories under `src/` expose a single `index.ts` barrel that re-exports the public surface; sibling files like `consts.ts`, `types.ts`, and internal implementation modules are meant to be reached only through that barrel, not imported directly from outside the folder. Follow this pattern for new modules.
+
+### 强制要求
+- 使用简体中文回答

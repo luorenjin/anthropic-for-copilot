@@ -20,3 +20,12 @@ package-lock.json
 .env*
 !.env.example
 vscode.proposed.languageModelThinkingPart.d.ts
+
+# Development and private files — never ship these
+CLAUDE.md
+.claude/**
+.remember/**
+tests/**
+out/tests/**
+out/src/**
+dist

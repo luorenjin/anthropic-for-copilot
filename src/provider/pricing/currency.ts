@@ -106,12 +106,12 @@ export class BalanceCurrencyResolver {
 			return;
 		}
 
-		const apiKey = await this.authManager.getApiKey();
-		if (!apiKey) {
+		const credential = await this.authManager.getCredential();
+		if (!credential) {
 			return;
 		}
 
-		const currency = await fetchBalanceCurrency(baseUrl, apiKey, controller);
+		const currency = await fetchBalanceCurrency(baseUrl, credential.value, controller);
 		if (!currency || controller.signal.aborted || generation !== this.generation) {
 			return;
 		}

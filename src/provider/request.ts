@@ -2,6 +2,8 @@ import vscode from 'vscode';
 import { AuthManager } from '../auth';
 import { AnthropicClient } from '../client';
 import { getApiModelId, getBaseUrl, getModelDefinition, getMaxTokens } from '../config';
+import { buildSystemWithClaudeCodeIdentity, isOAuthAccessToken } from '../credentials';
+import { parseModelId } from '../model-id';
 import { t } from '../i18n';
 import type { AnthropicRequest } from '../types';
 import { convertMessages, convertTools, countMessageChars } from './convert';
@@ -14,11 +16,7 @@ import { getConfiguredThinkingEffort, type ModelConfigurationOptions } from './m
 import type { ReplayMarkerMetadata } from './replay';
 import { classifyAnthropicRequest, type RequestKind } from './routing';
 import type { ConversationSegment } from './segment';
-import {
-	finalizeVisionResolutionStats,
-	prepareVisionMessages,
-	type VisionDescriber,
-} from './vision';
+import { prepareVisionMessages, type VisionDescriber } from './vision';
 
 export interface PreparedChatRequest {
 	client: AnthropicClient;
@@ -58,13 +56,13 @@ export async function prepareChatRequest({
 	cacheDiagnostics,
 	getVisionDescriber,
 }: PrepareChatRequestOptions): Promise<PreparedChatRequest> {
-	const apiKey = await authManager.getApiKey();
-	if (!apiKey) {
+	const credential = await authManager.getCredential();
+	if (!credential) {
 		throw new Error(t('auth.notConfigured'));
 	}
 
 	const baseUrl = getBaseUrl();
-	const client = new AnthropicClient(baseUrl, apiKey);
+	const client = new AnthropicClient(baseUrl, credential);
 	const modelDef = getModelDefinition(modelInfo.id);
 	const thinkingCapability = modelDef?.capabilities.thinking;
 	const isThinkingModel = Boolean(thinkingCapability);
@@ -80,11 +78,17 @@ export async function prepareChatRequest({
 	});
 
 	const resolvedMessages = visionResolution.messages;
-	const { system, messages: anthropicMessages } = convertMessages(
-		resolvedMessages,
-		isThinkingModel,
-		nativeImageInput,
-	);
+	const converted = convertMessages(resolvedMessages, isThinkingModel, nativeImageInput);
+	const anthropicMessages = converted.messages;
+
+	// Anthropic rejects every request made with a Claude subscription OAuth
+	// token with 429 rate_limit_error unless `system[0]` is *exactly* the
+	// Claude Code identity line as its own block — concatenating it into one
+	// string with the rest of the system prompt still 429s, only a separate
+	// leading block satisfies the check.
+	const system = isOAuthAccessToken(credential.value)
+		? buildSystemWithClaudeCodeIdentity(converted.system)
+		: converted.system;
 
 	const tools = convertTools(options.tools);
 	const totalRequestChars = countMessageChars(anthropicMessages);
@@ -100,8 +104,11 @@ export async function prepareChatRequest({
 
 	const thinkingBudget = getThinkingBudgetTokens(configuredThinkingEffort, maxTokens);
 
+	const { model, betas } = parseModelId(getApiModelId(modelInfo.id));
+
 	const request: AnthropicRequest = {
-		model: getApiModelId(modelInfo.id),
+		model,
+		...(betas.length > 0 ? { betas } : {}),
 		messages: anthropicMessages,
 		system,
 		stream: true,

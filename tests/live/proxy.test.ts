@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AnthropicClient } from '../src/client';
-import type { AnthropicRequest, StreamCallbacks } from '../src/types';
+import { AnthropicClient } from '../../src/client';
+import type { CredentialScheme } from '../../src/credentials';
+import type { AnthropicRequest, StreamCallbacks } from '../../src/types';
 
-test('AnthropicClient proxy request - sends hello and verifies HTTP 200 stream response', async (t) => {
+test('AnthropicClient proxy request - sends hello and verifies HTTP 200 stream response', async () => {
 	const baseUrl = process.env.ANTHROPIC_BASE_URL || 'http://claude.app.zkcrm.vip';
 	
 	// Strict 2-choose-1 (互斥二选一): ANTHROPIC_AUTH_TOKEN takes precedence; ignore ANTHROPIC_API_KEY if ANTHROPIC_AUTH_TOKEN is present
@@ -35,7 +36,13 @@ test('AnthropicClient proxy request - sends hello and verifies HTTP 200 stream r
 		);
 	}
 
-	const client = new AnthropicClient(baseUrl, apiKey);
+	// ANTHROPIC_AUTH_TOKEN is a bearer token; ANTHROPIC_API_KEY is an x-api-key.
+	const scheme: CredentialScheme = authToken?.trim() ? 'bearer' : 'x-api-key';
+	const client = new AnthropicClient(baseUrl, {
+		value: apiKey,
+		scheme,
+		origin: scheme === 'bearer' ? 'auth-token-env' : 'api-key-env',
+	});
 
 	const request: AnthropicRequest = {
 		model,

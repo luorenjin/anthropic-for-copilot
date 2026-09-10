@@ -33,5 +33,13 @@
 	"anthropic-copilot.config.modelIdOverrides.claude-haiku-4.5.description": "Haiku 4.5 的 API 模型 ID",
 	"anthropic-copilot.config.customModels.description": "定义更多自定义 Anthropic/Claude 模型及其显示名称。",
 	"anthropic-copilot.config.visionModel.description": "Vision Proxy 配置。",
-	"anthropic-copilot.config.customHeaders.description": "发送到 Anthropic API 的自定义 HTTP 请求头（如 LiteLLM / CC-Switch 中转站需要的 x-litellm-api-key 等）。"
+	"anthropic-copilot.config.customHeaders.description": "发送到 Anthropic API 的自定义 HTTP 请求头（如 LiteLLM / CC-Switch 中转站需要的 x-litellm-api-key 等）。",
+	"anthropic-copilot.config.useClaudeCodeSettings.description": "从 `~/.claude/settings.json` 的 `env` 段读取服务商配置（Claude Code 与 CC-Switch 使用的同一份文件）。该文件中的值优先于插件自身设置，一处配置即可两端通用。Claude Code 只把这些变量注入自己的进程，VS Code 默认读不到。",
+	"anthropic-copilot.config.authScheme.description": "凭证放在哪个 HTTP 头中发送。多数第三方中转站只接受 `Authorization: Bearer`；发错头通常表现为余额或额度报错，而不是鉴权报错。",
+	"anthropic-copilot.config.authScheme.auto.label": "自动",
+	"anthropic-copilot.config.authScheme.bearer.label": "Authorization: Bearer",
+	"anthropic-copilot.config.authScheme.xApiKey.label": "x-api-key",
+	"anthropic-copilot.config.authScheme.auto.description": "依据凭证来源判断：`ANTHROPIC_AUTH_TOKEN` 用 Bearer，`ANTHROPIC_API_KEY` 用 x-api-key；已保存的密钥在官方端点用 x-api-key，自定义端点用 Bearer。",
+	"anthropic-copilot.config.authScheme.bearer.description": "始终发送 `Authorization: Bearer <token>`。",
+	"anthropic-copilot.config.authScheme.xApiKey.description": "始终发送 `x-api-key: <key>`。"
 }
