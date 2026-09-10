@@ -22,4 +22,4 @@ With this experimental setting enabled, each request may include more function d
 2. Turn off `anthropic-copilot.experimental.stabilizeToolList`.
 3. If a lower cache hit rate is acceptable, you can continue sending messages in this chat.
 
-If you have a better solution, please join the discussion in [issues](https://github.com/Luorj/anthropic-for-copilot/issues).
+If you have a better solution, please join the discussion in [issues](https://github.com/luorenjin/anthropic-for-copilot/issues).

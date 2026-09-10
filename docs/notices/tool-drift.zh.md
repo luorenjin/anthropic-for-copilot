@@ -22,4 +22,4 @@ Anthropic 对输入前缀使用 Prompt Cache 缓存。Tools 数组是请求输�
 2. 关闭 `anthropic-copilot.experimental.stabilizeToolList`。
 3. 如果你不介意缓存命中率下降，也可以继续在当前会话发送消息。
 
-如果你有更好的解决方案，欢迎在 [Issues](https://github.com/Luorj/anthropic-for-copilot/issues) 讨论。
+如果你有更好的解决方案，欢迎在 [Issues](https://github.com/luorenjin/anthropic-for-copilot/issues) 讨论。
