@@ -1,3 +1,10 @@
+export { processSkillIndex } from './flow';
+export type {
+	SkillIndexAction,
+	SkillIndexFlowOptions,
+	SkillIndexFlowResult,
+	SkillIndexStats,
+} from './flow';
 export { parseSkillIndex, extractTag } from './parse';
 export type { ParsedSkillIndex, SkillIndexEntry } from './parse';
 export { buildSkillIndexModel, selectRelevantSkills, tokenize } from './select';

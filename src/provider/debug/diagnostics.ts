@@ -18,6 +18,7 @@ import {
 	type RequestKind,
 } from '../routing';
 import type { ConversationSegment } from '../segment';
+import type { SkillIndexStats } from '../skills';
 import { ACTIVATE_TOOL_PREFIX } from '../tools/consts';
 import type { ActivatePreflightInspection } from '../tools/preflight';
 import type { VisionResolutionStats as VisionPipelineStats, VisionProxySource } from '../vision';
@@ -289,6 +290,37 @@ export function logToolFlowDiagnostics({
 	}
 	if (initialResponseNotice) {
 		message += ` initialResponseNotice=true`;
+	}
+
+	logger.info(formatRequestLogLine(requestKind, message));
+}
+
+/**
+ * One line per request describing what the skills-index trimming step did.
+ * `not-applicable` (background requests) is skipped because every title or
+ * commit-message request would otherwise log it.
+ */
+export function logSkillIndexDiagnostics(requestKind: RequestKind, stats: SkillIndexStats): void {
+	if (!getDebugLoggingEnabled() || stats.action === 'not-applicable') {
+		return;
+	}
+
+	let message =
+		`[skill-index] action=${stats.action}` +
+		` entries=${stats.totalCount ?? 0}` +
+		` threshold=${stats.threshold}` +
+		` maxRelevant=${stats.maxRelevant}`;
+	if (stats.requestMessages !== undefined) {
+		message += ` requestMessages=${stats.requestMessages}`;
+	}
+	if (stats.injectedCounts) {
+		message += ` injected=[${stats.injectedCounts.join(',')}]`;
+	}
+	if (stats.systemCharsBefore !== undefined && stats.systemCharsAfter !== undefined) {
+		message += ` systemChars=${stats.systemCharsBefore}→${stats.systemCharsAfter}`;
+	}
+	if (stats.indexHash) {
+		message += ` indexHash=${stats.indexHash}`;
 	}
 
 	logger.info(formatRequestLogLine(requestKind, message));
