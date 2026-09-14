@@ -9,7 +9,7 @@ beforeEach(() => {
 });
 
 test('defaults match the spec', () => {
-	assert.deepEqual(getSkillIndexSettings(), { mode: 'auto', threshold: 32, maxRelevant: 12 });
+	assert.deepEqual(getSkillIndexSettings(), { mode: 'auto', threshold: 128, maxRelevant: 12 });
 });
 
 test('mode accepts off and treats unknown values as auto', () => {
@@ -25,7 +25,7 @@ test('threshold is clamped to a non-negative integer', () => {
 	__vscodeMock.config['anthropic-copilot.skillIndex.threshold'] = 7.9;
 	assert.equal(getSkillIndexSettings().threshold, 7);
 	__vscodeMock.config['anthropic-copilot.skillIndex.threshold'] = 'many';
-	assert.equal(getSkillIndexSettings().threshold, 32);
+	assert.equal(getSkillIndexSettings().threshold, 128);
 	__vscodeMock.config['anthropic-copilot.skillIndex.threshold'] = 0;
 	assert.equal(getSkillIndexSettings().threshold, 0);
 });

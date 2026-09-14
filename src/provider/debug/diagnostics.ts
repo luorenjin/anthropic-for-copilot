@@ -310,6 +310,9 @@ export function logSkillIndexDiagnostics(requestKind: RequestKind, stats: SkillI
 		` entries=${stats.totalCount ?? 0}` +
 		` threshold=${stats.threshold}` +
 		` maxRelevant=${stats.maxRelevant}`;
+	if (stats.reason) {
+		message += ` reason=${stats.reason}`;
+	}
 	if (stats.requestMessages !== undefined) {
 		message += ` requestMessages=${stats.requestMessages}`;
 	}

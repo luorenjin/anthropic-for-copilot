@@ -1,5 +1,6 @@
 export { processSkillIndex } from './flow';
 export type {
+	SkillIndexAbsentReason,
 	SkillIndexAction,
 	SkillIndexFlowOptions,
 	SkillIndexFlowResult,

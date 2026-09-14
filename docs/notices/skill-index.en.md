@@ -10,7 +10,7 @@ With many skills this index dominates the prompt. In one measured setup 1,551 sk
 
 ## What The Extension Does
 
-When the index has more entries than `anthropic-copilot.skillIndex.threshold` (default **32**), the extension:
+When the index has more entries than `anthropic-copilot.skillIndex.threshold` (default **128**), the extension:
 
 1. Replaces the whole `<skills>` block in the system prompt with a short fixed note.
 2. Appends a `<relevant_skills>` block to each user request containing at most `anthropic-copilot.skillIndex.maxRelevant` (default **12**) entries chosen by lexical similarity between the request text and each skill's name and description. Entries keep Copilot's exact `<skill>` markup.

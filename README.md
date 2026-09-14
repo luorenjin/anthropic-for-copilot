@@ -91,7 +91,7 @@ Plugs into VS Code's native `LanguageModelChatProvider` API, preserving Copilot'
 | `anthropic-copilot.modelIdOverrides` | `object` | `{}` | Map logical model IDs to custom API model names on proxy servers |
 | `anthropic-copilot.debugMode` | `string` | `"minimal"` | Diagnostic logging verbosity (`minimal`, `metadata`, `verbose`) |
 | `anthropic-copilot.skillIndex.mode` | `string` | `"auto"` | Trim Copilot's Agent Skills index when it is large (`auto`) or forward it unchanged (`off`). See [docs](docs/notices/skill-index.en.md) |
-| `anthropic-copilot.skillIndex.threshold` | `number` | `32` | Trim only when the index has strictly more entries than this (`0` = always) |
+| `anthropic-copilot.skillIndex.threshold` | `number` | `128` | Trim only when the index has strictly more entries than this (`0` = always) |
 | `anthropic-copilot.skillIndex.maxRelevant` | `number` | `12` | Skills appended to each user request after trimming (1–64) |
 
 ---

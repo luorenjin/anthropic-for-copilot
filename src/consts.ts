@@ -33,7 +33,7 @@ export const LANGUAGE_MODEL_CHAT_SYSTEM_ROLE = 3;
 // ---- Skills index trimming (see docs/superpowers/specs/2026-09-14-skill-index-trimming-design.md) ----
 
 /** Trim only when Copilot's `<skills>` block has more entries than this. 0 means always. */
-export const DEFAULT_SKILL_INDEX_THRESHOLD = 32;
+export const DEFAULT_SKILL_INDEX_THRESHOLD = 128;
 /** Entries appended to each user request after trimming. */
 export const DEFAULT_SKILL_INDEX_MAX_RELEVANT = 12;
 export const MAX_SKILL_INDEX_MAX_RELEVANT = 64;

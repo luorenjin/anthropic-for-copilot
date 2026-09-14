@@ -3,6 +3,8 @@ import test, { beforeEach } from 'node:test';
 import vscode from 'vscode';
 import { LANGUAGE_MODEL_CHAT_SYSTEM_ROLE } from '../../src/consts';
 import type { SkillIndexSettings } from '../../src/config';
+import type { RequestKind } from '../../src/provider/routing';
+import { classifyProviderRequest } from '../../src/provider/routing';
 import type { SkillIndexFlowResult } from '../../src/provider/skills';
 import { processSkillIndex, renderSkillIndexStub } from '../../src/provider/skills';
 import { SKILL_INDEX_NOTICE_START } from '../../src/provider/tools/consts';
@@ -121,13 +123,29 @@ function fallbackConversation(): Message[] {
 	];
 }
 
-function run(messages: Message[]): SkillIndexFlowResult {
-	return processSkillIndex({
-		messages,
-		rawMessages: messages,
-		requestKind: 'main-agent',
-		settings: SETTINGS,
-	});
+/**
+ * Copilot re-enters the provider with a terminal notification of its own once a
+ * command finishes, which `classifyProviderRequest` reports as
+ * `terminal-steering` even though the prompt still carries the skills index.
+ */
+function terminalSteeringConversation(): Message[] {
+	return [
+		...deepConversation(),
+		assistant('Running the migration script.'),
+		user(text('[Terminal 1234 notification: The command exited with code 0]')),
+	];
+}
+
+/** A genuine background request (chat title, commit message) ships no skills index. */
+function backgroundConversation(): Message[] {
+	return [
+		system('You are an expert in crafting pithy titles\n<instructions>\nplain\n</instructions>'),
+		user(text('write a title for this conversation')),
+	];
+}
+
+function run(messages: Message[], requestKind: RequestKind = 'main-agent'): SkillIndexFlowResult {
+	return processSkillIndex({ messages, rawMessages: messages, requestKind, settings: SETTINGS });
 }
 
 beforeEach(() => {
@@ -147,16 +165,12 @@ test('mode off returns the same messages reference', () => {
 	assert.equal(result.initialResponseNotice, undefined);
 });
 
-test('non main-agent requests are left alone', () => {
-	const messages = conversation();
-	const result = processSkillIndex({
-		messages,
-		rawMessages: messages,
-		requestKind: 'background',
-		settings: SETTINGS,
-	});
+test('a background request carrying no index is not-applicable', () => {
+	const messages = backgroundConversation();
+	const result = run(messages, 'background');
 	assert.equal(result.messages, messages);
 	assert.equal(result.stats.action, 'not-applicable');
+	assert.equal(result.stats.reason, 'no-skills-text');
 });
 
 test('no skills block means absent', () => {
@@ -169,6 +183,59 @@ test('no skills block means absent', () => {
 	});
 	assert.equal(result.messages, messages);
 	assert.equal(result.stats.action, 'absent');
+	assert.equal(result.stats.reason, 'no-skills-text');
+});
+
+test('two <skills> blocks are refused with a diagnosable reason', () => {
+	const messages = [
+		system(SYSTEM_TEXT + '\n\n' + SKILLS_BLOCK),
+		request('Plan the database migration'),
+	];
+	const result = processSkillIndex({
+		messages,
+		rawMessages: messages,
+		requestKind: 'main-agent',
+		settings: SETTINGS,
+	});
+	assert.equal(result.messages, messages);
+	assert.equal(result.stats.action, 'absent');
+	assert.equal(result.stats.reason, 'unparseable-block');
+});
+
+test('a <skills> block in two system parts is refused with a diagnosable reason', () => {
+	const messages: Message[] = [
+		{
+			role: SYSTEM_ROLE,
+			name: undefined,
+			content: [text(SYSTEM_TEXT), text(SKILLS_BLOCK)],
+		},
+		request('Plan the database migration'),
+	];
+	const result = processSkillIndex({
+		messages,
+		rawMessages: messages,
+		requestKind: 'main-agent',
+		settings: SETTINGS,
+	});
+	assert.equal(result.messages, messages);
+	assert.equal(result.stats.action, 'absent');
+	assert.equal(result.stats.reason, 'multiple-system-parts');
+});
+
+test('an unterminated <skills> block is refused with a diagnosable reason', () => {
+	const messages = [
+		system(SYSTEM_PREFIX + SKILLS_BLOCK.replace('</skills>', '')),
+		request('Plan the database migration'),
+	];
+	const result = processSkillIndex({
+		messages,
+		rawMessages: messages,
+		requestKind: 'main-agent',
+		settings: SETTINGS,
+	});
+	assert.equal(result.messages, messages);
+	assert.equal(result.stats.action, 'absent');
+	assert.equal(result.stats.reason, 'unparseable-block');
 });
 
 test('at or below the threshold the prompt passes through untouched', () => {
@@ -238,6 +305,24 @@ test('re-running on the next turn reproduces the earlier turn byte for byte', ()
 	// in the previousQuery chain changes its bytes between the two turns.
 	assert.ok(one.stats.injectedCounts?.[1]);
 	assertReproducesEarlierTurn(two, one);
+});
+
+test('a terminal-steering turn carrying the index is trimmed like the main-agent turn before it', () => {
+	const later = terminalSteeringConversation();
+	// Copilot's own terminal notification, not a user prompt: the classifier reports
+	// terminal-steering even though the system prompt still carries the whole index.
+	assert.equal(classifyProviderRequest({ messages: later }), 'terminal-steering');
+
+	const one = run(deepConversation());
+	const two = run(later, 'terminal-steering');
+
+	// Skipping the trim here would ship the full index and drop every appended
+	// block, breaking the cached prefix from the system message on.
+	assert.equal(two.stats.action, 'trimmed');
+	assertReproducesEarlierTurn(two, one);
+	// The notification message carries no <userRequest>, so it is forwarded untouched.
+	assert.equal(two.stats.requestMessages, one.stats.requestMessages);
+	assert.equal(two.messages[two.messages.length - 1], later[later.length - 1]);
 });
 
 test('the no-<userRequest> fallback is stable across turns too', () => {

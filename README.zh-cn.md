@@ -92,7 +92,7 @@
 | `anthropic-copilot.modelIdOverrides` | `object` | `{}` | 自定义模型 ID 映射（用于代理服务端点不同模型名的场景） |
 | `anthropic-copilot.debugMode` | `string` | `"minimal"` | 诊断日志模式 (`minimal`, `metadata`, `verbose`) |
 | `anthropic-copilot.skillIndex.mode` | `string` | `"auto"` | Copilot 技能索引过大时是否裁剪（`auto`）或原样转发（`off`），详见[文档](docs/notices/skill-index.zh.md) |
-| `anthropic-copilot.skillIndex.threshold` | `number` | `32` | 索引条数严格大于该值才裁剪（`0` 表示总是裁剪） |
+| `anthropic-copilot.skillIndex.threshold` | `number` | `128` | 索引条数严格大于该值才裁剪（`0` 表示总是裁剪） |
 | `anthropic-copilot.skillIndex.maxRelevant` | `number` | `12` | 裁剪后每条用户请求最多追加的技能数（1–64） |
 
 ---

@@ -172,7 +172,7 @@
 				},
 				"anthropic-copilot.skillIndex.threshold": {
 					"type": "integer",
-					"default": 32,
+					"default": 128,
 					"minimum": 0,
 					"markdownDescription": "%anthropic-copilot.config.skillIndex.threshold.description%",
 					"tags": [

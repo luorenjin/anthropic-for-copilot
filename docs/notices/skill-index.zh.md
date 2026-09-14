@@ -10,7 +10,7 @@ Anthropic Claude for Copilot Chat 检测到 Copilot 向系统提示注入了一�
 
 ## 扩展做了什么
 
-当索引条数超过 `anthropic-copilot.skillIndex.threshold`（默认 **32**）时，扩展会：
+当索引条数超过 `anthropic-copilot.skillIndex.threshold`（默认 **128**）时，扩展会：
 
 1. 把系统提示中的整个 `<skills>` 块替换为一段固定的简短说明。
 2. 在每条用户请求末尾追加一个 `<relevant_skills>` 块，其中最多包含 `anthropic-copilot.skillIndex.maxRelevant`（默认 **12**）条技能，按请求文本与技能名称、描述之间的词法相似度选出。条目保留 Copilot 原始的 `<skill>` 格式。
