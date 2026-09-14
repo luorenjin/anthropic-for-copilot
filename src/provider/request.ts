@@ -5,6 +5,7 @@ import { getApiModelId, getBaseUrl, getModelDefinition, getMaxTokens } from '../
 import { buildSystemWithClaudeCodeIdentity, isOAuthAccessToken } from '../credentials';
 import { parseModelId } from '../model-id';
 import { t } from '../i18n';
+import { logger } from '../logger';
 import type { AnthropicRequest } from '../types';
 import { convertMessages, convertTools, countMessageChars } from './convert';
 import {
@@ -16,6 +17,7 @@ import { getConfiguredThinkingEffort, type ModelConfigurationOptions } from './m
 import type { ReplayMarkerMetadata } from './replay';
 import { classifyAnthropicRequest, type RequestKind } from './routing';
 import type { ConversationSegment } from './segment';
+import { filterUnsupportedMcpTools } from './tools/mcp-filter';
 import { prepareVisionMessages, type VisionDescriber } from './vision';
 
 export interface PreparedChatRequest {
@@ -81,16 +83,25 @@ export async function prepareChatRequest({
 	const converted = convertMessages(resolvedMessages, isThinkingModel, nativeImageInput);
 	const anthropicMessages = converted.messages;
 
+	const isOAuthToken = isOAuthAccessToken(credential.value);
+
 	// Anthropic rejects every request made with a Claude subscription OAuth
 	// token with 429 rate_limit_error unless `system[0]` is *exactly* the
 	// Claude Code identity line as its own block — concatenating it into one
 	// string with the rest of the system prompt still 429s, only a separate
 	// leading block satisfies the check.
-	const system = isOAuthAccessToken(credential.value)
+	const system = isOAuthToken
 		? buildSystemWithClaudeCodeIdentity(converted.system)
 		: converted.system;
 
-	const tools = convertTools(options.tools);
+	const mcpFilter = filterUnsupportedMcpTools(options.tools, isOAuthToken);
+	if (mcpFilter.removedNames.length > 0) {
+		logger.warn(
+			`Dropped ${mcpFilter.removedNames.length} MCP tool(s) the Claude subscription gateway ` +
+				`rejects requests over: ${mcpFilter.removedNames.join(', ')}`,
+		);
+	}
+	const tools = convertTools(mcpFilter.tools);
 	const totalRequestChars = countMessageChars(anthropicMessages);
 	const hasNativeImages =
 		visionResolution.stats.imageHandlingMode === 'native' &&

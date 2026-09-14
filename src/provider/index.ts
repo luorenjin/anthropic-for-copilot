@@ -5,6 +5,7 @@ import { isOfficialAnthropicBaseUrl, normalizeBaseUrl } from '../endpoint';
 import { t } from '../i18n';
 import { logger } from '../logger';
 import { createCacheDiagnosticsRecorder, dumpProviderInput } from './debug';
+import { isExtensionHostShutdownCancellation } from './deactivate';
 import { toChatInfo } from './models';
 import { BalanceCurrencyResolver } from './pricing/currency';
 import { PricingRefreshScheduler } from './pricing/schedule';
@@ -112,6 +113,10 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 		try {
 			await vscode.lm.selectChatModels({ vendor: 'anthropic' });
 		} catch (error) {
+			if (isExtensionHostShutdownCancellation(error)) {
+				logger.debug('Anthropic model refresh canceled during deactivate (extension host shutting down)');
+				return;
+			}
 			logger.warn('Failed to refresh Anthropic models during deactivate', error);
 		}
 	}
