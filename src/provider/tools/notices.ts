@@ -1,6 +1,8 @@
 import vscode from 'vscode';
 import { t } from '../../i18n';
 import {
+	SKILL_INDEX_NOTICE_END,
+	SKILL_INDEX_NOTICE_START,
 	TOOL_DRIFT_NOTICE_END,
 	TOOL_DRIFT_NOTICE_START,
 	VISION_PROXY_NOTICE_END,
@@ -30,6 +32,18 @@ export function createToolDriftNotice(): string {
 		createBlockquote(t('notice.toolDrift')),
 		'',
 		TOOL_DRIFT_NOTICE_END,
+		'',
+	].join('\n');
+}
+
+export function createSkillIndexNotice(totalCount: number, maxRelevant: number): string {
+	return [
+		'',
+		SKILL_INDEX_NOTICE_START,
+		'',
+		createBlockquote(t('notice.skillIndexTrimmed', totalCount, maxRelevant)),
+		'',
+		SKILL_INDEX_NOTICE_END,
 		'',
 	].join('\n');
 }
@@ -115,6 +129,7 @@ function stripProviderNotices(value: string): string {
 	for (const marker of [
 		{ start: TOOL_DRIFT_NOTICE_START, end: TOOL_DRIFT_NOTICE_END },
 		{ start: VISION_PROXY_NOTICE_START, end: VISION_PROXY_NOTICE_END },
+		{ start: SKILL_INDEX_NOTICE_START, end: SKILL_INDEX_NOTICE_END },
 	]) {
 		result = stripProviderNotice(result, marker.start, marker.end);
 	}

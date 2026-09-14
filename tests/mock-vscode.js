@@ -24,6 +24,34 @@ const noopChannel = {
 	dispose: () => {},
 };
 
+// Minimal Language Model API surface. Source modules and tests both receive
+// these same classes through the patched require, so `instanceof` checks in
+// src/ work against parts constructed in tests.
+class LanguageModelTextPart {
+	constructor(value) {
+		this.value = value;
+	}
+}
+class LanguageModelToolCallPart {
+	constructor(callId, name, input) {
+		this.callId = callId;
+		this.name = name;
+		this.input = input;
+	}
+}
+class LanguageModelToolResultPart {
+	constructor(callId, content) {
+		this.callId = callId;
+		this.content = content;
+	}
+}
+class LanguageModelDataPart {
+	constructor(data, mimeType) {
+		this.data = data;
+		this.mimeType = mimeType;
+	}
+}
+
 const vscodeStub = {
 	workspace: {
 		getConfiguration: (section) => ({
@@ -53,6 +81,11 @@ const vscodeStub = {
 		},
 	},
 	ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
+	LanguageModelChatMessageRole: { User: 1, Assistant: 2, System: 3 },
+	LanguageModelTextPart,
+	LanguageModelToolCallPart,
+	LanguageModelToolResultPart,
+	LanguageModelDataPart,
 };
 
 Module.prototype.require = function (id) {

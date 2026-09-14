@@ -178,6 +178,8 @@ const zh: Translations = {
 	'notice.visionProxyFailure': '**⚠️ {0}**\\\n\\\n**{1} · {2}**',
 	'notice.toolDrift':
 		'⚠️ 工具列表不稳定，缓存命中率可能下降。[了解更多](https://github.com/luorenjin/anthropic-for-copilot/blob/main/docs/notices/tool-drift.zh.md)',
+	'notice.skillIndexTrimmed':
+		'ℹ️ Copilot 提供了 {0} 个技能；为节省 token，仅向模型展示与每条请求最相关的至多 {1} 个。[了解更多](https://github.com/luorenjin/anthropic-for-copilot/blob/main/docs/notices/skill-index.zh.md)',
 
 	// Errors
 	'error.http.400': '[{0}] 请求体格式错误。请根据错误信息提示修改请求体。',
@@ -399,6 +401,8 @@ const en: Translations = {
 	'notice.visionProxyFailure': '**⚠️ {0}**\\\n\\\n**{1} · {2}**',
 	'notice.toolDrift':
 		'⚠️ Tool list is unstable; cache hit rate may drop. [Learn more](https://github.com/luorenjin/anthropic-for-copilot/blob/main/docs/notices/tool-drift.en.md)',
+	'notice.skillIndexTrimmed':
+		'ℹ️ Copilot supplied {0} skills; to save tokens, only the {1} most relevant to each request are shown to the model. [Learn more](https://github.com/luorenjin/anthropic-for-copilot/blob/main/docs/notices/skill-index.en.md)',
 
 	// Errors
 	'error.http.400':

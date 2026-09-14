@@ -9,3 +9,6 @@ export const TOOL_DRIFT_NOTICE_START = '[anthropic-copilot-tool-drift-notice-sta
 export const TOOL_DRIFT_NOTICE_END = '[anthropic-copilot-tool-drift-notice-end]: #';
 export const VISION_PROXY_NOTICE_START = '[anthropic-copilot-vision-proxy-notice-start]: #';
 export const VISION_PROXY_NOTICE_END = '[anthropic-copilot-vision-proxy-notice-end]: #';
+
+export const SKILL_INDEX_NOTICE_START = '[anthropic-copilot-skill-index-notice-start]: #';
+export const SKILL_INDEX_NOTICE_END = '[anthropic-copilot-skill-index-notice-end]: #';
