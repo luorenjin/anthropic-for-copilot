@@ -154,6 +154,41 @@
 						"experimental"
 					]
 				},
+				"anthropic-copilot.skillIndex.mode": {
+					"type": "string",
+					"default": "auto",
+					"enum": [
+						"auto",
+						"off"
+					],
+					"markdownEnumDescriptions": [
+						"%anthropic-copilot.config.skillIndex.mode.auto.description%",
+						"%anthropic-copilot.config.skillIndex.mode.off.description%"
+					],
+					"markdownDescription": "%anthropic-copilot.config.skillIndex.mode.description%",
+					"tags": [
+						"language-models"
+					]
+				},
+				"anthropic-copilot.skillIndex.threshold": {
+					"type": "integer",
+					"default": 32,
+					"minimum": 0,
+					"markdownDescription": "%anthropic-copilot.config.skillIndex.threshold.description%",
+					"tags": [
+						"language-models"
+					]
+				},
+				"anthropic-copilot.skillIndex.maxRelevant": {
+					"type": "integer",
+					"default": 12,
+					"minimum": 1,
+					"maximum": 64,
+					"markdownDescription": "%anthropic-copilot.config.skillIndex.maxRelevant.description%",
+					"tags": [
+						"language-models"
+					]
+				},
 				"anthropic-copilot.modelIdOverrides": {
 					"type": "object",
 					"default": {},

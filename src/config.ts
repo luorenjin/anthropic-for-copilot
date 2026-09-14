@@ -1,6 +1,12 @@
 import vscode from 'vscode';
 import { readClaudeCodeEnvCached } from './claude-code';
-import { CONFIG_SECTION, MODELS } from './consts';
+import {
+	CONFIG_SECTION,
+	DEFAULT_SKILL_INDEX_MAX_RELEVANT,
+	DEFAULT_SKILL_INDEX_THRESHOLD,
+	MAX_SKILL_INDEX_MAX_RELEVANT,
+	MODELS,
+} from './consts';
 import type { CredentialSchemeSetting } from './credentials';
 import type { ModelDefinition } from './types';
 
@@ -385,6 +391,46 @@ export function getRequestDumpEnabled(): boolean {
 export function getStabilizeToolListEnabled(): boolean {
 	const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
 	return config.get<boolean>('experimental.stabilizeToolList', false);
+}
+
+export interface SkillIndexSettings {
+	mode: 'auto' | 'off';
+	/** Trim only when the index has strictly more entries than this; 0 means always. */
+	threshold: number;
+	/** Entries appended to each user request; 1..64. */
+	maxRelevant: number;
+}
+
+/**
+ * Settings for trimming Copilot's `<skills>` index. Read on every request so
+ * changes apply without a reload; out-of-range values are clamped rather than
+ * rejected so a typo never disables the feature silently.
+ */
+export function getSkillIndexSettings(): SkillIndexSettings {
+	const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
+	const mode = config.get<unknown>('skillIndex.mode', 'auto');
+	return {
+		mode: mode === 'off' ? 'off' : 'auto',
+		threshold: clampInteger(
+			config.get<unknown>('skillIndex.threshold', DEFAULT_SKILL_INDEX_THRESHOLD),
+			0,
+			Number.MAX_SAFE_INTEGER,
+			DEFAULT_SKILL_INDEX_THRESHOLD,
+		),
+		maxRelevant: clampInteger(
+			config.get<unknown>('skillIndex.maxRelevant', DEFAULT_SKILL_INDEX_MAX_RELEVANT),
+			1,
+			MAX_SKILL_INDEX_MAX_RELEVANT,
+			DEFAULT_SKILL_INDEX_MAX_RELEVANT,
+		),
+	};
+}
+
+function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		return fallback;
+	}
+	return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
 export async function migrateLegacyDebugSetting(): Promise<void> {
