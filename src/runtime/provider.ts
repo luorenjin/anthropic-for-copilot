@@ -8,7 +8,9 @@ export async function registerProvider(
 	const provider = new AnthropicChatProvider(context);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('anthropic-copilot.setApiKey', () => provider.configureApiKey()),
+		vscode.commands.registerCommand('anthropic-copilot.setApiKey', () =>
+			provider.configureApiKey(),
+		),
 		vscode.commands.registerCommand('anthropic-copilot.clearApiKey', () => provider.clearApiKey()),
 		vscode.commands.registerCommand('anthropic-copilot.setVisionModel', () =>
 			provider.setVisionModel(),

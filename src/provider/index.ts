@@ -114,7 +114,9 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 			await vscode.lm.selectChatModels({ vendor: 'anthropic' });
 		} catch (error) {
 			if (isExtensionHostShutdownCancellation(error)) {
-				logger.debug('Anthropic model refresh canceled during deactivate (extension host shutting down)');
+				logger.debug(
+					'Anthropic model refresh canceled during deactivate (extension host shutting down)',
+				);
 				return;
 			}
 			logger.warn('Failed to refresh Anthropic models during deactivate', error);

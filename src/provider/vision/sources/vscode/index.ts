@@ -237,7 +237,9 @@ function isVSCodeVisionModel(model: vscode.LanguageModelChat): boolean {
 	);
 }
 
-function isAnthropicVisionExpModel(model: Pick<vscode.LanguageModelChat, 'vendor' | 'id'>): boolean {
+function isAnthropicVisionExpModel(
+	model: Pick<vscode.LanguageModelChat, 'vendor' | 'id'>,
+): boolean {
 	return model.vendor === 'anthropic' && model.id === DEFAULT_VISION_MODEL_ID;
 }
 

@@ -59,8 +59,6 @@ export class AnthropicRequestError extends Error {
 	}
 }
 
-
-
 export function createHttpErrorFromStatus(
 	status: number,
 	statusText: string,
@@ -69,10 +67,7 @@ export function createHttpErrorFromStatus(
 ): AnthropicRequestError {
 	const { baseUrl } = context;
 	const serverMessage = extractServerMessage(responseText);
-	const baseSummary = getHttpErrorMessage(
-		status,
-		getCreateApiKeyUrl(status, baseUrl),
-	);
+	const baseSummary = getHttpErrorMessage(status, getCreateApiKeyUrl(status, baseUrl));
 	const userSummary = serverMessage ? `${baseSummary} (${serverMessage})` : baseSummary;
 
 	return new AnthropicRequestError({
@@ -388,7 +383,8 @@ function countImageParts(content: AnthropicMessage['content']): number {
 	if (typeof content === 'string') {
 		return 0;
 	}
-	return content.filter((part) => part.type === 'image' || part.type === ('image_url' as string)).length;
+	return content.filter((part) => part.type === 'image' || part.type === ('image_url' as string))
+		.length;
 }
 
 function joinDiagnosticParts(...parts: (string | undefined)[]): string {

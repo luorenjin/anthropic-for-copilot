@@ -670,7 +670,9 @@ function summarizeVscodeSystemPrompt(
 	);
 }
 
-function summarizeAnthropicSystemPrompt(messages: readonly AnthropicMessage[]): SystemPromptSummary {
+function summarizeAnthropicSystemPrompt(
+	messages: readonly AnthropicMessage[],
+): SystemPromptSummary {
 	const message = messages[0];
 	const customizations = summarizeAnthropicCustomizations(messages);
 	if (!message) {

@@ -74,7 +74,9 @@ export interface AnthropicSystemBlock {
 export function buildSystemWithClaudeCodeIdentity(
 	system: string | undefined,
 ): AnthropicSystemBlock[] {
-	const blocks: AnthropicSystemBlock[] = [{ type: 'text', text: CLAUDE_CODE_IDENTITY_SYSTEM_PROMPT }];
+	const blocks: AnthropicSystemBlock[] = [
+		{ type: 'text', text: CLAUDE_CODE_IDENTITY_SYSTEM_PROMPT },
+	];
 	if (system) {
 		blocks.push({ type: 'text', text: system });
 	}

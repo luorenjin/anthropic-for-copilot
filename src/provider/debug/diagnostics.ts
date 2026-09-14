@@ -3,7 +3,12 @@ import vscode from 'vscode';
 import { getDebugLoggingEnabled } from '../../config';
 import { LANGUAGE_MODEL_CHAT_SYSTEM_ROLE } from '../../consts';
 import { logger } from '../../logger';
-import type { AnthropicMessage, AnthropicRequest, AnthropicTool, AnthropicUsage } from '../../types';
+import type {
+	AnthropicMessage,
+	AnthropicRequest,
+	AnthropicTool,
+	AnthropicUsage,
+} from '../../types';
 import { anthropicContentToText } from '../content';
 import { REPLAY_MARKER_MIME, parseFirstReplayMarker } from '../replay';
 import {

@@ -150,9 +150,7 @@ function convertToolResultContent(
 			.join('');
 		const textContent =
 			text ||
-			(toolResult.originalContent.length > 0
-				? safeStringify(toolResult.originalContent)
-				: '');
+			(toolResult.originalContent.length > 0 ? safeStringify(toolResult.originalContent) : '');
 
 		return {
 			type: 'tool_result',
@@ -207,9 +205,7 @@ function normalizeThinkingPartText(value: string | string[]): string {
 	return Array.isArray(value) ? value.join('') : value;
 }
 
-function mapRole(
-	role: vscode.LanguageModelChatMessageRole,
-): 'user' | 'assistant' | 'system' {
+function mapRole(role: vscode.LanguageModelChatMessageRole): 'user' | 'assistant' | 'system' {
 	switch (role) {
 		case vscode.LanguageModelChatMessageRole.User:
 			return 'user';

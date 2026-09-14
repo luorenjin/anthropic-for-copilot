@@ -38,7 +38,8 @@ const zh: Translations = {
 
 	// API Key
 	'auth.apiKeyRequiredDetail': '请先配置 API Key',
-	'auth.prompt': '请输入 Anthropic API Key 或 Auth Token。支持读取 ANTHROPIC_AUTH_TOKEN / ANTHROPIC_API_KEY 环境变量。',
+	'auth.prompt':
+		'请输入 Anthropic API Key 或 Auth Token。支持读取 ANTHROPIC_AUTH_TOKEN / ANTHROPIC_API_KEY 环境变量。',
 	'auth.placeholder': 'sk-ant-... 或服务商令牌',
 	'auth.emptyValidation': 'API Key 不能为空',
 	'auth.saved': 'API Key 已安全保存。',
@@ -63,8 +64,7 @@ const zh: Translations = {
 	'vision.proxyError': '视觉代理异常：',
 	'vision.action.configureProxy': '配置视觉代理',
 	'vision.panel.title': 'Anthropic 视觉代理',
-	'vision.panel.description':
-		'为 Claude 模型配置视觉代理。支持图片输入。',
+	'vision.panel.description': '为 Claude 模型配置视觉代理。支持图片输入。',
 	'vision.panel.source.vscodeLm': 'VS Code 模型',
 	'vision.panel.source.apiEndpoint': 'API 端点',
 	'vision.panel.field.source': '视觉代理来源',
@@ -187,7 +187,8 @@ const zh: Translations = {
 		'[{0}] API Key 错误，认证失败。请检查您的 API Key 是否正确。如没有 API key，请先[创建 API Key]({1})。',
 	'error.http.402': '[{0}] 账号余额不足。请确认账户余额，并前往充值页面进行充值。',
 	'error.http.422': '[{0}] 请求体参数错误。请根据错误信息提示修改相关参数。',
-	'error.http.429': '[{0}] 请求速率达到上限或中转站拒绝请求（如缺少 x-litellm-api-key 等自定义 Header，请在设置中配置 customHeaders）。',
+	'error.http.429':
+		'[{0}] 请求速率达到上限或中转站拒绝请求（如缺少 x-litellm-api-key 等自定义 Header，请在设置中配置 customHeaders）。',
 	'error.http.500': '[{0}] 服务器内部故障。请等待后重试。',
 	'error.http.503': '[{0}] 服务器负载过高。请稍后重试您的请求。',
 	'error.http.generic': '[{0}] 服务返回错误响应。',
@@ -224,10 +225,8 @@ const en: Translations = {
 	'model.flash.detail': 'Sonnet 5 model',
 	'model.pro.detail': 'Opus 5 model',
 	'model.flash-vision-exp.detail': 'Fable 5.1 model',
-	'model.flash.tooltip':
-		'Anthropic 5 Sonnet high-performance model with 1M context.',
-	'model.pro.tooltip':
-		'Anthropic 5 Opus flagship reasoning model with 1M context.',
+	'model.flash.tooltip': 'Anthropic 5 Sonnet high-performance model with 1M context.',
+	'model.pro.tooltip': 'Anthropic 5 Opus flagship reasoning model with 1M context.',
 	'model.pricing.currentPeak': 'Peak',
 	'model.pricing.currentOffPeak': 'Off-peak',
 	'model.pricing.inputLabel': 'Input',
@@ -445,7 +444,8 @@ const en: Translations = {
 	'error.unknown': 'Anthropic request failed: {0}',
 
 	// Extension
-	'extension.activateFailed': 'Anthropic failed to activate. Run "Anthropic: Show Logs" for details.',
+	'extension.activateFailed':
+		'Anthropic failed to activate. Run "Anthropic: Show Logs" for details.',
 	'extension.deactivateFailed': 'Failed to prepare Anthropic provider for deactivate',
 	'extension.welcomeFailed': 'Failed to show Anthropic welcome prompt',
 	'extension.openRequestDumpsFolderFailed':
