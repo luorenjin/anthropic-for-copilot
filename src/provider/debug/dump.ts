@@ -18,6 +18,7 @@ import {
 	type RequestKind,
 } from '../routing';
 import type { ConversationSegment } from '../segment';
+import type { SkillIndexStats } from '../skills';
 import { ACTIVATE_TOOL_PREFIX } from '../tools/consts';
 import type { VisionProxySource, VisionResolutionStats } from '../vision';
 
@@ -109,6 +110,7 @@ export interface DumpAnthropicRequestOptions {
 	visionModelId?: string;
 	visionProxySource?: VisionProxySource;
 	visionStats?: VisionResolutionStats;
+	skillIndexStats?: SkillIndexStats;
 }
 
 export interface DumpProviderInputOptions {
@@ -363,6 +365,7 @@ function createPipelineSnapshot(
 						stats: options.visionStats ?? null,
 					}
 				: undefined,
+		skillIndex: stage === 'resolved' ? (options.skillIndexStats ?? null) : undefined,
 		anthropicPromptSummary: summarizeAnthropicSystemPrompt(request.messages),
 		messages,
 		requestOptions: options.requestOptions,
@@ -376,6 +379,7 @@ function createDumpSnapshot(options: {
 	requestKind: RequestKind;
 	model: object;
 	vision?: object;
+	skillIndex?: SkillIndexStats | null;
 	anthropicPromptSummary?: SystemPromptSummary;
 	messages: readonly vscode.LanguageModelChatRequestMessage[];
 	requestOptions: vscode.ProvideLanguageModelChatResponseOptions;
@@ -393,6 +397,7 @@ function createDumpSnapshot(options: {
 		options: summarizeRequestOptions(options.requestOptions),
 		hostSettings: summarizeHostSettings(),
 		vision: options.vision,
+		skillIndex: options.skillIndex,
 		systemPromptSummary: summarizeVscodeSystemPrompt(options.messages),
 		anthropicPromptSummary: options.anthropicPromptSummary,
 		messageStats: summarizeMessages(serializedMessages),

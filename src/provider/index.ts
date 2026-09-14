@@ -1,6 +1,11 @@
 import vscode from 'vscode';
 import { AuthManager } from '../auth';
-import { getAllModels, getBaseUrl, getStabilizeToolListEnabled } from '../config';
+import {
+	getAllModels,
+	getBaseUrl,
+	getSkillIndexSettings,
+	getStabilizeToolListEnabled,
+} from '../config';
 import { isOfficialAnthropicBaseUrl, normalizeBaseUrl } from '../endpoint';
 import { t } from '../i18n';
 import { logger } from '../logger';
@@ -12,6 +17,7 @@ import { PricingRefreshScheduler } from './pricing/schedule';
 import { prepareChatRequest } from './request';
 import { classifyProviderRequest } from './routing';
 import { resolveConversationSegment } from './segment';
+import { processSkillIndex } from './skills';
 import { streamChatCompletion } from './stream';
 import { estimateTokenCount } from './tokens';
 import { processToolFlow } from './tools/flow';
@@ -190,16 +196,24 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 			return;
 		}
 
+		const skillIndex = processSkillIndex({
+			messages: toolFlow.messages,
+			rawMessages: messages,
+			requestKind,
+			settings: getSkillIndexSettings(),
+		});
+
 		const prepared = await prepareChatRequest({
 			authManager: this.authManager,
 			globalStorageUri: this.globalStorageUri,
 			modelInfo,
 			segment,
-			messages: toolFlow.messages,
+			messages: skillIndex.messages,
 			options,
 			token,
 			cacheDiagnostics: this.cacheDiagnostics,
 			getVisionDescriber: () => this.vision.get(),
+			skillIndexStats: skillIndex.stats,
 		});
 
 		return streamChatCompletion({
@@ -208,6 +222,7 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 			token,
 			initialResponseNotice: joinInitialResponseNotices(
 				toolFlow.initialResponseNotice,
+				skillIndex.initialResponseNotice,
 				prepared.initialResponseNotice,
 			),
 			getCharsPerToken: () => this.charsPerToken,

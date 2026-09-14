@@ -17,6 +17,7 @@ import { getConfiguredThinkingEffort, type ModelConfigurationOptions } from './m
 import type { ReplayMarkerMetadata } from './replay';
 import { classifyAnthropicRequest, type RequestKind } from './routing';
 import type { ConversationSegment } from './segment';
+import type { SkillIndexStats } from './skills';
 import { filterUnsupportedMcpTools } from './tools/mcp-filter';
 import { prepareVisionMessages, type VisionDescriber } from './vision';
 
@@ -45,6 +46,7 @@ export interface PrepareChatRequestOptions {
 	token: vscode.CancellationToken;
 	cacheDiagnostics: CacheDiagnosticsRecorder;
 	getVisionDescriber: () => Promise<VisionDescriber | undefined>;
+	skillIndexStats?: SkillIndexStats;
 }
 
 export async function prepareChatRequest({
@@ -57,6 +59,7 @@ export async function prepareChatRequest({
 	token,
 	cacheDiagnostics,
 	getVisionDescriber,
+	skillIndexStats,
 }: PrepareChatRequestOptions): Promise<PreparedChatRequest> {
 	const credential = await authManager.getCredential();
 	if (!credential) {
@@ -155,6 +158,7 @@ export async function prepareChatRequest({
 		visionModelId: visionResolution.visionModelId,
 		visionProxySource: visionResolution.visionProxySource,
 		visionStats: visionResolution.stats,
+		skillIndexStats,
 	});
 
 	const diagnosticsRun = cacheDiagnostics.beginRequest({
