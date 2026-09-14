@@ -3,6 +3,7 @@ import test, { beforeEach } from 'node:test';
 import vscode from 'vscode';
 import { LANGUAGE_MODEL_CHAT_SYSTEM_ROLE } from '../../src/consts';
 import type { SkillIndexSettings } from '../../src/config';
+import type { SkillIndexFlowResult } from '../../src/provider/skills';
 import { processSkillIndex, renderSkillIndexStub } from '../../src/provider/skills';
 import { SKILL_INDEX_NOTICE_START } from '../../src/provider/tools/consts';
 
@@ -60,6 +61,31 @@ function textOf(message: Message): string {
 		.map((part) => part.value)
 		.join('');
 }
+/** Part-by-part description, so a change in part order or count is caught too. */
+function describeParts(message: Message): string[] {
+	return message.content.map((part) => {
+		if (part instanceof vscode.LanguageModelTextPart) {
+			return `text:${part.value}`;
+		}
+		if (part instanceof vscode.LanguageModelToolResultPart) {
+			return `toolResult:${part.callId}`;
+		}
+		return `other:${JSON.stringify(part)}`;
+	});
+}
+/** Every message of the earlier turn must reproduce byte for byte in the later turn. */
+function assertReproducesEarlierTurn(later: SkillIndexFlowResult, earlier: SkillIndexFlowResult) {
+	assert.equal(earlier.stats.action, 'trimmed');
+	assert.equal(later.stats.action, 'trimmed');
+	assert.ok(later.messages.length > earlier.messages.length, 'the later turn must have grown');
+	for (const [index, message] of earlier.messages.entries()) {
+		assert.deepEqual(
+			describeParts(later.messages[index]),
+			describeParts(message),
+			`message #${index}`,
+		);
+	}
+}
 
 const ENV = user(text('<environment_info>\nwin32\n</environment_info>'));
 const SETTINGS: SkillIndexSettings = { mode: 'auto', threshold: 2, maxRelevant: 12 };
@@ -73,6 +99,35 @@ function conversation(): Message[] {
 		toolResult(),
 		request('继续'),
 	];
+}
+
+/** Three `<userRequest>` messages, so at least one has a real earlier query as its `previous`. */
+function deepConversation(): Message[] {
+	return [
+		...conversation(),
+		assistant('Done.'),
+		request('Now review the REST API design for breaking changes'),
+	];
+}
+
+/** A surface that ships the index without wrapping prompts in `<userRequest>`. */
+function fallbackConversation(): Message[] {
+	return [
+		system(SYSTEM_TEXT),
+		user(text('Review the REST API design')),
+		assistant('ok'),
+		user(text('now the database migration plan')),
+		toolResult(),
+	];
+}
+
+function run(messages: Message[]): SkillIndexFlowResult {
+	return processSkillIndex({
+		messages,
+		rawMessages: messages,
+		requestKind: 'main-agent',
+		settings: SETTINGS,
+	});
 }
 
 beforeEach(() => {
@@ -170,25 +225,32 @@ test('above the threshold the system prompt keeps only the stub and requests get
 });
 
 test('re-running on the next turn reproduces the earlier turn byte for byte', () => {
-	const turnOne = conversation().slice(0, 4);
-	const turnTwo = conversation();
-	const one = processSkillIndex({
-		messages: turnOne,
-		rawMessages: turnOne,
-		requestKind: 'main-agent',
-		settings: SETTINGS,
-	});
-	const two = processSkillIndex({
-		messages: turnTwo,
-		rawMessages: turnTwo,
-		requestKind: 'main-agent',
-		settings: SETTINGS,
-	});
-	assert.equal(one.stats.action, 'trimmed');
-	assert.equal(two.stats.action, 'trimmed');
-	for (let index = 0; index < one.messages.length; index += 1) {
-		assert.equal(textOf(two.messages[index]), textOf(one.messages[index]), `message #${index}`);
-	}
+	const one = run(deepConversation());
+	const two = run([
+		...deepConversation(),
+		assistant('Reviewed.'),
+		request('Guidance for distinctive UI visual design of the dashboard'),
+	]);
+
+	assert.equal(one.stats.requestMessages, 3);
+	assert.equal(two.stats.requestMessages, 4);
+	// The second request ("继续") only matches through its `previous`, so a regression
+	// in the previousQuery chain changes its bytes between the two turns.
+	assert.ok(one.stats.injectedCounts?.[1]);
+	assertReproducesEarlierTurn(two, one);
+});
+
+test('the no-<userRequest> fallback is stable across turns too', () => {
+	const one = run(fallbackConversation());
+	const two = run([
+		...fallbackConversation(),
+		assistant('done'),
+		user(text('and the frontend visual design')),
+	]);
+
+	assertReproducesEarlierTurn(two, one);
+	assert.equal(one.stats.requestMessages, 2);
+	assert.equal(two.stats.requestMessages, 3);
 });
 
 test('the notice is returned once and suppressed when history already carries it', () => {
@@ -216,24 +278,27 @@ test('the notice is returned once and suppressed when history already carries it
 	assert.equal(repeat.stats.action, 'trimmed');
 });
 
-test('without <userRequest> only the last text-bearing user message is used, with its full text', () => {
-	const messages = [
-		system(SYSTEM_TEXT),
-		user(text('Review the REST API design')),
-		assistant('ok'),
-		user(text('now the database migration plan')),
-		toolResult(),
-	];
-	const result = processSkillIndex({
-		messages,
-		rawMessages: messages,
-		requestKind: 'main-agent',
-		settings: SETTINGS,
-	});
+test('without <userRequest> every text-bearing user message is a request, scored on its own text', () => {
+	const messages = fallbackConversation();
+	const result = run(messages);
+
 	assert.equal(result.stats.action, 'trimmed');
-	assert.equal(result.stats.requestMessages, 1);
-	assert.equal(result.messages[1], messages[1]);
-	assert.ok(textOf(result.messages[3]).includes('<name>database-migration</name>'));
+	assert.equal(result.stats.requestMessages, 2);
+	assert.equal(result.stats.injectedCounts?.length, 2);
+	assert.ok(result.stats.injectedCounts?.every((count) => count > 0));
+
+	// Each request message carries its own block, reflecting its own text rather
+	// than the last message's.
+	const first = result.messages[1];
+	assert.equal(first.content.length, messages[1].content.length + 1);
+	assert.ok(textOf(first).includes('<name>api-design-reviewer</name>'));
+	assert.ok(!textOf(first).includes('<name>database-migration</name>'));
+
+	const second = result.messages[3];
+	assert.equal(second.content.length, messages[3].content.length + 1);
+	assert.ok(textOf(second).includes('<name>database-migration</name>'));
+
+	// The tool-result message has no text parts and is forwarded by reference.
 	assert.equal(result.messages[4], messages[4]);
 });
 

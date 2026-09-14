@@ -194,13 +194,18 @@ function locateSkillsBlock(messages: readonly Message[]): LocatedSkillsBlock | u
  * Message index → query text for every user message that carries a
  * `<userRequest>`. Tool-result messages have no text parts and Copilot's
  * environment preamble has no `<userRequest>`, so both drop out. When the
- * conversation has no `<userRequest>` at all (non-agent surfaces), the last
- * text-bearing user message is used with its full text.
+ * conversation has no `<userRequest>` at all (non-agent surfaces), every
+ * text-bearing user message becomes a request scored on its own full text.
+ *
+ * Both branches are content-addressed: which messages are requests, and the
+ * query each one is scored on, depend only on the messages themselves. Picking
+ * by position instead (e.g. "the last text-bearing message") would give a
+ * message a block on one turn and none on the next, so its bytes would change
+ * as history grew and the cached prefix would break from that message on.
  */
 function findRequestQueries(messages: readonly Message[]): Map<number, string> {
 	const queries = new Map<number, string>();
-	let lastTextIndex = -1;
-	let lastText = '';
+	const textBearing = new Map<number, string>();
 	for (const [index, message] of messages.entries()) {
 		if (message.role !== vscode.LanguageModelChatMessageRole.User) {
 			continue;
@@ -209,17 +214,13 @@ function findRequestQueries(messages: readonly Message[]): Map<number, string> {
 		if (text === undefined) {
 			continue;
 		}
-		lastTextIndex = index;
-		lastText = text;
+		textBearing.set(index, text);
 		const request = extractUserRequestText(text);
 		if (request !== undefined) {
 			queries.set(index, request);
 		}
 	}
-	if (queries.size === 0 && lastTextIndex >= 0) {
-		queries.set(lastTextIndex, lastText);
-	}
-	return queries;
+	return queries.size > 0 ? queries : textBearing;
 }
 
 /** Concatenated text parts, or `undefined` when the message has none. */
