@@ -6,6 +6,7 @@ import {
 	getSkillIndexSettings,
 	getStabilizeToolListEnabled,
 } from '../config';
+import { VENDOR_ID } from '../consts';
 import { isOfficialAnthropicBaseUrl, normalizeBaseUrl } from '../endpoint';
 import { t } from '../i18n';
 import { logger } from '../logger';
@@ -117,7 +118,7 @@ export class AnthropicChatProvider implements vscode.LanguageModelChatProvider {
 		this.refreshModelPicker();
 
 		try {
-			await vscode.lm.selectChatModels({ vendor: 'anthropic' });
+			await vscode.lm.selectChatModels({ vendor: VENDOR_ID });
 		} catch (error) {
 			if (isExtensionHostShutdownCancellation(error)) {
 				logger.debug(

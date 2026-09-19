@@ -4,6 +4,9 @@ All notable changes to the `anthropic-for-copilot` extension will be documented 
 
 ## [Unreleased]
 
+### Fixed
+- **Model picker vendor id collision with Copilot Chat's built-in Anthropic BYOK provider**: This extension previously registered its models under the `vscode.lm` vendor id `anthropic`, the same id GitHub Copilot Chat's own bundled Anthropic BYOK provider registers for itself. VS Code only allows one registrant per vendor id; whichever extension registered second would throw and fail to activate, which is why Claude models sometimes disappeared from the picker after install/update and only came back after `Developer: Reload Window`. The vendor id is now `anthropic-copilot`, eliminating the collision. **Action needed after updating:** re-select the Claude model in the Copilot Chat model picker, since it now appears under a new vendor entry.
+
 ### Added
 - **Skills Index Trimming**: When Copilot Chat injects a large Agent Skills index into the system prompt (more than `anthropic-copilot.skillIndex.threshold` entries, default 128), the extension now replaces it with a short stub and appends only the `anthropic-copilot.skillIndex.maxRelevant` (default 12) skills most relevant to each user request. Selection is deterministic so the Anthropic prompt-cache prefix is preserved across turns. A one-time notice links to `docs/notices/skill-index.*.md`; set `anthropic-copilot.skillIndex.mode` to `off` to disable.
 

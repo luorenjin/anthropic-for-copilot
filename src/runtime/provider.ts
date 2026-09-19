@@ -1,4 +1,5 @@
 import vscode from 'vscode';
+import { VENDOR_ID } from '../consts';
 import { logger } from '../logger';
 import { AnthropicChatProvider } from '../provider';
 
@@ -15,7 +16,7 @@ export async function registerProvider(
 		vscode.commands.registerCommand('anthropic-copilot.setVisionModel', () =>
 			provider.setVisionModel(),
 		),
-		vscode.lm.registerLanguageModelChatProvider('anthropic', provider),
+		vscode.lm.registerLanguageModelChatProvider(VENDOR_ID, provider),
 	);
 
 	await activateCopilotChat();

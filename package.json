@@ -3,7 +3,7 @@
 	"displayName": "Anthropic Claude for Copilot Chat",
 	"description": "Use Anthropic Claude (Sonnet 5, Opus 5, Fable 5.1) with 1M context in Copilot Chat with native vision, custom API Key, custom Base URL, reasoning, and agent tools.",
 	"icon": "resources/icon.png",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"publisher": "Luorj",
 	"author": "Luorj",
 	"license": "MIT",
@@ -47,7 +47,7 @@
 	"contributes": {
 		"languageModelChatProviders": [
 			{
-				"vendor": "anthropic",
+				"vendor": "anthropic-copilot",
 				"displayName": "Anthropic"
 			}
 		],
@@ -357,15 +357,15 @@
 		"test:live": "npm run compile:tests && node --require ./tests/mock-vscode.js --test \"out/tests/live/*.test.js\""
 	},
 	"devDependencies": {
-		"@types/node": "^26.5.0",
+		"@types/node": "^26.6.1",
 		"@types/vscode": "^1.136.0",
-		"@vscode/vsce": "^3.9.1",
-		"ovsx": "1.1.1",
-		"oxfmt": "^0.67.0",
-		"oxlint": "^1.82.0",
+		"@vscode/vsce": "^4.0.0",
+		"ovsx": "1.2.0",
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {
-		"@anthropic-ai/sdk": "^0.124.0"
+		"@anthropic-ai/sdk": "^0.126.0"
 	}
 }

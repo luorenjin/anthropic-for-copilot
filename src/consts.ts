@@ -10,6 +10,19 @@ import type { ModelDefinition } from './types';
 /** VS Code configuration section prefix for all extension settings. */
 export const CONFIG_SECTION = 'anthropic-copilot';
 
+/**
+ * vscode.lm vendor id this extension registers under.
+ *
+ * Must stay distinct from the literal `'anthropic'`, which GitHub Copilot Chat's own
+ * built-in Anthropic BYOK provider registers for itself (near-unconditionally, for any
+ * individual Copilot subscriber). Two extensions cannot hold the same vendor id in
+ * VS Code's runtime `_providers` registry — whichever calls
+ * `registerLanguageModelChatProvider` second throws synchronously, which previously
+ * aborted this extension's activation depending on race timing. Must match
+ * `contributes.languageModelChatProviders[0].vendor` in package.json.
+ */
+export const VENDOR_ID = CONFIG_SECTION;
+
 export const EXTERNAL_URLS = {
 	anthropic: {
 		apiKeys: 'https://console.anthropic.com/settings/keys',

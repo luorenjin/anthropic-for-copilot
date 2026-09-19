@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-VS Code extension that implements `vscode.LanguageModelChatProvider` (vendor id `anthropic`) so Anthropic Claude models (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5, plus user-defined custom models) appear directly in the native GitHub Copilot Chat model picker. The extension is a translation layer between VS Code's Language Model Chat API and Anthropic's Messages API — it does not implement any chat UI itself; Copilot Chat's UI, agent mode, and tool calling are reused as-is.
+VS Code extension that implements `vscode.LanguageModelChatProvider` (vendor id `anthropic-copilot`, `VENDOR_ID` in `src/consts.ts`) so Anthropic Claude models (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5, plus user-defined custom models) appear directly in the native GitHub Copilot Chat model picker. The extension is a translation layer between VS Code's Language Model Chat API and Anthropic's Messages API — it does not implement any chat UI itself; Copilot Chat's UI, agent mode, and tool calling are reused as-is.
+
+The vendor id is deliberately **not** `'anthropic'`: GitHub Copilot Chat bundles its own native Anthropic BYOK provider that registers that exact vendor id near-unconditionally for any individual Copilot subscriber. VS Code's runtime `_providers` registry allows only one registrant per vendor id — whichever extension calls `registerLanguageModelChatProvider` second throws synchronously, which previously made this extension's activation fail depending on activation-order race timing (only a full window reload, which resets the registry, reliably "fixed" it). Do not revert this vendor id back to `'anthropic'`.
 
 Node >= 24 is required (see `.nvmrc`); no bundler is used, `tsc` compiles `src/` straight to `out/`.
 
@@ -34,7 +36,7 @@ CI (`.github/workflows/ci.yml`) runs lint, format:check, compile, `npm test`, an
 
 ### Activation flow
 
-`src/extension.ts` re-exports `activate`/`deactivate` from `src/runtime/lifecycle.ts`, which on activation: initializes diagnostics, registers commands (`runtime/commands.ts`), registers URI handlers for deep-linked actions (`runtime/actions.ts` — e.g. `vscode://<ext-id>/setApiKey`, used by error messages and notices to link back into the extension), then builds and registers the provider (`runtime/provider.ts`), which constructs `AnthropicChatProvider` and calls `vscode.lm.registerLanguageModelChatProvider('anthropic', provider)`. It also nudges `github.copilot-chat` to activate so the model picker refreshes promptly, and shows the walkthrough on first run (`runtime/welcome.ts`).
+`src/extension.ts` re-exports `activate`/`deactivate` from `src/runtime/lifecycle.ts`, which on activation: initializes diagnostics, registers commands (`runtime/commands.ts`), registers URI handlers for deep-linked actions (`runtime/actions.ts` — e.g. `vscode://<ext-id>/setApiKey`, used by error messages and notices to link back into the extension), then builds and registers the provider (`runtime/provider.ts`), which constructs `AnthropicChatProvider` and calls `vscode.lm.registerLanguageModelChatProvider(VENDOR_ID, provider)`. It also nudges `github.copilot-chat` to activate so the model picker refreshes promptly, and shows the walkthrough on first run (`runtime/welcome.ts`).
 
 ### The provider (`src/provider/index.ts`)
 
