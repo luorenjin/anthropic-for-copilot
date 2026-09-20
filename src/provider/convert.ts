@@ -56,10 +56,17 @@ export function convertMessages(
 		for (const part of message.content) {
 			if (part instanceof vscode.LanguageModelTextPart) {
 				textContent += part.value;
-				contentBlocks.push({
-					type: 'text',
-					text: part.value,
-				});
+				// Copilot replays a tool-only assistant turn as an empty text part in
+				// front of the tool call, so these accumulate one per tool round.
+				// Anthropic rejects the whole request over any of them with
+				// `messages: text content blocks must be non-empty`, so an empty part
+				// never becomes a block.
+				if (part.value.length > 0) {
+					contentBlocks.push({
+						type: 'text',
+						text: part.value,
+					});
+				}
 			} else if (nativeImageInput && role === 'user' && isImageDataPart(part)) {
 				contentBlocks.push({
 					type: 'image',

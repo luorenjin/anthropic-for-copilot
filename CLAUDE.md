@@ -68,6 +68,10 @@ This project targets "BYOK behind a relay" setups (Claude Code, CC-Switch, LiteL
 - **Custom headers** (`customHeaders` setting / `ANTHROPIC_CUSTOM_HEADERS`, JSON or `Key: Value` lines).
 - `getDebugMode()` reads `debugMode`; the legacy boolean `debug` setting is migrated to `debugMode: metadata` on activation.
 
+### Message conversion (`src/provider/convert.ts`)
+
+**Empty text parts must never become text blocks.** Copilot replays every historical assistant turn that called a tool without saying anything as an empty `LanguageModelTextPart` in front of the `LanguageModelToolCallPart`. Anthropic rejects the *whole* request over a `{"type":"text","text":""}` block with `400 invalid_request_error: messages: text content blocks must be non-empty`, so `convertMessages()` only emits a block when `part.value.length > 0`; the turn survives on its `tool_use` block. The empty blocks accumulate one per tool round, and the official endpoint tolerates them where some relays do not — which is why this presented as an Agent-mode failure that only appeared after several tool rounds and only on a relay `baseUrl`. Regression coverage: `tests/unit/convert-empty-text.test.ts`.
+
 ### Model IDs and betas (`src/model-id.ts`)
 
 `[1M]` is a **Claude Code client-side convention**, not an Anthropic model name — the real API answers `404 not_found_error` for `claude-sonnet-5[1M]`. `parseModelId()` strips the suffix and returns the `context-1m-2025-08-07` beta instead, which the client sends as `anthropic-beta`. This is what makes `modelIdOverrides` and `ANTHROPIC_DEFAULT_*_MODEL` copy-paste compatible with a Claude Code config.
