@@ -62,6 +62,12 @@ jobs:
           fi
           echo "should_release=${should_release}" >> "$GITHUB_OUTPUT"
 
+          if [ "${should_release}" = "true" ]; then
+            echo "::notice::${tag} will be published to the VS Code Marketplace and Open VSX once this build is green."
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "::notice::package.json version ${version} was already released (${tag} exists); nothing will be published. Bump the version to publish again."
+          fi
+
       - run: mkdir -p dist && npm run package
 
       - uses: actions/upload-artifact@v4
