@@ -3,7 +3,6 @@ import { safeStringify } from '../json';
 import type {
 	AnthropicContentBlock,
 	AnthropicMessage,
-	AnthropicRequest,
 	AnthropicTool,
 	AnthropicToolCall,
 } from '../types';

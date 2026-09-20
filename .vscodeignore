@@ -25,6 +25,7 @@ vscode.proposed.languageModelThinkingPart.d.ts
 CLAUDE.md
 .claude/**
 .remember/**
+.superpowers/**
 tests/**
 out/tests/**
 out/src/**

@@ -24,6 +24,10 @@ In VS Code, F5 (`Run Extension (Current VS Code)` launch config) starts an Exten
 
 CI (`.github/workflows/ci.yml`) runs lint, format:check, compile, `npm test`, and package. Only the offline suite runs there; `test:live` is never run by CI.
 
+### Releasing
+
+Releases are version-driven: when a push to `main` passes the `build` job and `package.json`'s version has no `v<version>` tag yet, the `release` job (GitHub environment `production`) publishes the *same* VSIX artifact to the VS Code Marketplace (`VSCE_PAT`) and Open VSX (`OVSX_PAT`, skipped with a warning when unset), then creates the tag and a GitHub Release whose body is the matching `## [<version>]` section of `CHANGELOG.md`. So to ship: bump `version` in `package.json` (and `package-lock.json` via `npm install --package-lock-only`), add the `## [<version>] - <date>` CHANGELOG section, merge to `main`. Pushing to `main` without a version bump only runs the checks. Repository variables `PUBLISH_VSCODE_MARKETPLACE` / `PUBLISH_OPEN_VSX` set to `false` disable a target; `.github/workflows/rescue.yml` (`workflow_dispatch`) re-publishes any ref by hand if the automatic release failed part-way. It refuses to re-point an existing tag at a different commit — bump the version instead.
+
 ### Tests
 
 `tests/unit/` is the offline suite and the one CI gates on. `tests/mock-vscode.js` is preloaded via `--require`; it patches `Module.prototype.require` to stub the `vscode` module and exposes `globalThis.__vscodeMock` so a test can drive settings by full id (`__vscodeMock.config['anthropic-copilot.customHeaders'] = ...`) and `reset()` between cases. Most logic under test lives in vscode-free modules (`src/credentials.ts`, `src/model-id.ts`, `src/claude-code.ts`, `src/client/base-url.ts`) so it can be imported directly.

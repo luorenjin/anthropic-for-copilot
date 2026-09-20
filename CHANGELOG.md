@@ -4,6 +4,16 @@ All notable changes to the `anthropic-for-copilot` extension will be documented 
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-20
+
+### Changed
+- **Automated releases**: CI now publishes to the VS Code Marketplace and Open VSX, tags the commit, and creates a GitHub Release with the VSIX attached whenever a version bump lands on `main` and the build is green. release-please has been removed.
+
+### Fixed
+- **CI build**: Removed an unused import and dead diagnostics helper that made `npm run lint` (and therefore CI) fail.
+
+## [1.1.0] - 2026-09-20
+
 ### Fixed
 - **Model picker vendor id collision with Copilot Chat's built-in Anthropic BYOK provider**: This extension previously registered its models under the `vscode.lm` vendor id `anthropic`, the same id GitHub Copilot Chat's own bundled Anthropic BYOK provider registers for itself. VS Code only allows one registrant per vendor id; whichever extension registered second would throw and fail to activate, which is why Claude models sometimes disappeared from the picker after install/update and only came back after `Developer: Reload Window`. The vendor id is now `anthropic-copilot`, eliminating the collision. **Action needed after updating:** re-select the Claude model in the Copilot Chat model picker, since it now appears under a new vendor entry.
 
