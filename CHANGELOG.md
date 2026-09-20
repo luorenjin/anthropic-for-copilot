@@ -4,6 +4,14 @@ All notable changes to the `anthropic-for-copilot` extension will be documented 
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-20
+
+### Changed
+- README 图标改用公开绝对地址，修复商店页面图标裂开
+
+### Internal
+- 发布前确保 Open VSX 命名空间存在，避免 Unknown publisher
+
 ## [1.1.1] - 2026-09-20
 
 ### Changed
