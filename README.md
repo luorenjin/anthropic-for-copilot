@@ -1,7 +1,10 @@
 <h1 align="center">Anthropic Claude for Copilot Chat</h1>
 
+<!-- Absolute URL on purpose: the extension registries rewrite relative README images
+     to github.com/<repo>/raw/HEAD/…, which returns 404 while the repository is private,
+     so a relative path breaks this logo on the Marketplace and Open VSX pages. -->
 <p align="center">
-  <img src="resources/icon.png" alt="Anthropic Claude Logo" width="120" />
+  <img src="https://Luorj.gallerycdn.vsassets.io/extensions/luorj/anthropic-for-copilot/1.1.1/1789896106778/Microsoft.VisualStudio.Services.Icons.Default" alt="Anthropic Claude Logo" width="120" />
 </p>
 
 <p align="center">

@@ -1,7 +1,9 @@
 <h1 align="center">Anthropic Claude for Copilot Chat</h1>
 
+<!-- 这里故意用绝对地址：两个扩展注册表会把 README 里的相对图片路径改写成
+     github.com/<repo>/raw/HEAD/…，仓库为私有时该地址 404，图标在商店页面就会裂开。 -->
 <p align="center">
-  <img src="resources/icon.png" alt="Anthropic Claude Logo" width="120" />
+  <img src="https://Luorj.gallerycdn.vsassets.io/extensions/luorj/anthropic-for-copilot/1.1.1/1789896106778/Microsoft.VisualStudio.Services.Icons.Default" alt="Anthropic Claude Logo" width="120" />
 </p>
 
 <p align="center">
