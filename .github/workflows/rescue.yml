@@ -111,6 +111,23 @@ jobs:
           fi
           npm exec -- vsce publish --packagePath "${{ steps.vsix.outputs.path }}" --skip-duplicate
 
+      # Open VSX rejects a publish with "Unknown publisher: <name>" until a namespace
+      # named after the `publisher` field exists in the registry, so make sure it does.
+      # This is a one-time registration: creating a namespace that already exists
+      # fails, and that expected failure is only reported, never fatal.
+      - name: Ensure the Open VSX namespace exists
+        if: inputs.publish_open_vsx == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OVSX_PAT}" ]; then
+            exit 0
+          fi
+          publisher="$(node -p "require('./package.json').publisher")"
+          if ! npm exec -- ovsx create-namespace "${publisher}"; then
+            echo "::notice::Namespace '${publisher}' already exists (or was not created here); continuing."
+          fi
+
       - name: Publish to Open VSX
         if: inputs.publish_open_vsx == true
         shell: bash
