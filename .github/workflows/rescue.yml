@@ -1,7 +1,8 @@
 name: Rescue Publish
 
 # Manual fallback for when the automatic release in ci.yml failed part-way
-# (e.g. Marketplace outage, expired PAT). Re-publishes the given git ref.
+# (e.g. Marketplace outage, expired PAT). Re-publishes the given git ref at whatever
+# version its package.json already carries — it never bumps the version itself.
 on:
   workflow_dispatch:
     inputs:

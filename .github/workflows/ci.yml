@@ -5,7 +5,27 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # On-demand release: run this manually on main to publish immediately.
+  # `bump` only affects on-demand runs; pushes to main always use `auto`.
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'auto = patch-bump only when the current version was already released; none = build without publishing'
+        required: false
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+          - none
+        default: auto
+
+# Serialize runs per ref: only the newest push to main may publish, and two runs
+# must never race on the same version bump.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -14,11 +34,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.meta.outputs.version }}
-      tag: ${{ steps.meta.outputs.tag }}
-      should_release: ${{ steps.meta.outputs.should_release }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      bumped: ${{ steps.plan.outputs.bumped }}
+      should_release: ${{ steps.plan.outputs.should_release }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the release plan needs the previous release tag and the
+          # list of commits that makes up the changelog section.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -35,47 +60,164 @@ jobs:
 
       - run: npm test
 
-      # A release happens when a push to main carries a package.json version whose
-      # tag (v<version>) does not exist yet — bumping the version is the only action
-      # needed to trigger a publish once this build is green.
-      - name: Resolve version and release decision
-        id: meta
+      # Decides whether this run publishes and which version it publishes. A push to
+      # main carrying an unreleased version publishes it as-is; if the version was
+      # already released, the patch version is bumped, so every merged change ships
+      # without anyone touching package.json.
+      - name: Plan release
+        id: plan
+        shell: bash
+        env:
+          BUMP_INPUT: ${{ inputs.bump || 'auto' }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          current="$(node -p "require('./package.json').version")"
+          version="${current}"
+          bumped=false
+          should_release=false
+          reason="not evaluated"
+          head_subject="$(git log -1 --pretty=%s)"
+
+          # Documentation, CI and test-harness changes do not affect the shipped
+          # extension, so they never trigger a release.
+          is_docs_only() {
+            case "${BEFORE_SHA:-}" in
+              '' | 0000000000000000000000000000000000000000) return 1 ;;
+            esac
+            git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null || return 1
+            local files
+            files="$(git diff --name-only "${BEFORE_SHA}" HEAD)" || return 1
+            [ -n "${files}" ] || return 1
+            local file
+            while IFS= read -r file; do
+              [ -n "${file}" ] || continue
+              case "${file}" in
+                *.md | docs/* | .github/* | .vscode/* | .claude/* | .superpowers/* | .remember/*) ;;
+                LICENSE | .gitignore | .gitattributes | .nvmrc | .oxlintrc.json | .oxfmtrc.json) ;;
+                *) return 1 ;;
+              esac
+            done <<< "${files}"
+            return 0
+          }
+
+          next_version() {
+            node -e "
+              const [version, mode] = process.argv.slice(1);
+              const [major, minor, patch] = version.split('.').map(Number);
+              const next =
+                mode === 'major' ? [major + 1, 0, 0] :
+                mode === 'minor' ? [major, minor + 1, 0] :
+                [major, minor, patch + 1];
+              console.log(next.join('.'));
+            " "${current}" "$1"
+          }
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            reason="pull request builds never publish"
+          elif [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            reason="only main publishes, this ref is ${GITHUB_REF}"
+          elif [ "${BUMP_INPUT}" = "none" ]; then
+            reason="bump input is 'none'"
+          elif [ "${head_subject#chore(release):}" != "${head_subject}" ]; then
+            reason="HEAD is an automated release commit"
+          else
+            git fetch --quiet --tags origin main
+            tip="$(git rev-parse origin/main)"
+            if [ "${tip}" != "${GITHUB_SHA}" ]; then
+              reason="main already moved on to ${tip:0:7}, so the newer run publishes"
+            elif [ "${GITHUB_EVENT_NAME}" = "push" ] && is_docs_only; then
+              reason="only documentation/CI files changed"
+            else
+              status=0
+              git ls-remote --exit-code --tags origin "refs/tags/v${current}" >/dev/null 2>&1 || status=$?
+              case "${status}" in
+                2)
+                  should_release=true
+                  reason="publishing ${current} (this version is not released yet)"
+                  ;;
+                0)
+                  mode="${BUMP_INPUT}"
+                  case "${mode}" in
+                    major | minor | patch) ;;
+                    *) mode="patch" ;;
+                  esac
+                  version="$(next_version "${mode}")"
+                  bumped=true
+                  should_release=true
+                  reason="v${current} is already released, publishing ${version} (${mode} bump)"
+                  ;;
+                *)
+                  echo "::error::Could not determine whether tag v${current} exists (git ls-remote exited ${status})." >&2
+                  exit 1
+                  ;;
+              esac
+            fi
+          fi
+
+          tag="v${version}"
+          {
+            echo "version=${version}"
+            echo "tag=${tag}"
+            echo "bumped=${bumped}"
+            echo "should_release=${should_release}"
+            echo "reason=${reason}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "${should_release}" = "true" ]; then
+            echo "::notice::${reason}"
+          else
+            echo "::notice::Not publishing: ${reason}"
+          fi
+
+      # The bumped version has to be inside the packaged manifest, so the bump is
+      # applied before packaging. The edited files travel to the release job as an
+      # artifact, so the released source tree matches the published VSIX byte for byte.
+      - name: Apply version bump
+        if: steps.plan.outputs.bumped == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          version="$(node -p "require('./package.json').version")"
-          tag="v${version}"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-
-          should_release=false
-          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            status=0
-            git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1 || status=$?
-            case "${status}" in
-              0) echo "Tag ${tag} already exists; nothing to release." ;;
-              2) should_release=true
-                 echo "Tag ${tag} does not exist yet; this build will be released." ;;
-              *) echo "::error::Could not determine whether tag ${tag} exists (git ls-remote exited ${status})." >&2
-                 exit 1 ;;
-            esac
-          fi
-          echo "should_release=${should_release}" >> "$GITHUB_OUTPUT"
-
-          if [ "${should_release}" = "true" ]; then
-            echo "::notice::${tag} will be published to the VS Code Marketplace and Open VSX once this build is green."
-          elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            echo "::notice::package.json version ${version} was already released (${tag} exists); nothing will be published. Bump the version to publish again."
-          fi
+          npm version "${{ steps.plan.outputs.version }}" --no-git-tag-version
+          node .github/scripts/generate-changelog-section.mjs "${{ steps.plan.outputs.version }}"
 
       - run: mkdir -p dist && npm run package
 
+      - name: Stage release source
+        if: steps.plan.outputs.bumped == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-source
+          cp package.json package-lock.json CHANGELOG.md release-source/
+
       - uses: actions/upload-artifact@v4
         with:
-          name: anthropic-for-copilot-${{ steps.meta.outputs.tag }}
+          name: anthropic-for-copilot-${{ steps.plan.outputs.tag }}
           path: dist/*.vsix
           if-no-files-found: error
           retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.bumped == 'true'
+        with:
+          name: release-source-${{ steps.plan.outputs.tag }}
+          path: release-source/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "### Build result"
+            echo
+            echo "- version: \`${{ steps.plan.outputs.version }}\`"
+            echo "- will publish: \`${{ steps.plan.outputs.should_release }}\`"
+            echo "- version bumped by CI: \`${{ steps.plan.outputs.bumped }}\`"
+            echo "- reason: ${{ steps.plan.outputs.reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   release:
     needs: build
@@ -90,10 +232,12 @@ jobs:
     env:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
-      RELEASE_TAG: ${{ needs.build.outputs.tag }}
       RELEASE_VERSION: ${{ needs.build.outputs.version }}
+      RELEASE_TAG: ${{ needs.build.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -102,11 +246,17 @@ jobs:
 
       - run: npm ci
 
-      # Publish the exact VSIX that the build job validated instead of rebuilding.
+      # Publish the exact VSIX the build job produced instead of rebuilding it.
       - uses: actions/download-artifact@v4
         with:
           name: anthropic-for-copilot-${{ needs.build.outputs.tag }}
           path: dist
+
+      - uses: actions/download-artifact@v4
+        if: needs.build.outputs.bumped == 'true'
+        with:
+          name: release-source-${{ needs.build.outputs.tag }}
+          path: release-source
 
       - name: Locate and verify VSIX
         id: vsix
@@ -122,14 +272,40 @@ jobs:
           fi
           packaged="$(unzip -p "${files[0]}" extension/package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")"
           if [ "${packaged}" != "${RELEASE_VERSION}" ]; then
-            echo "VSIX version ${packaged} does not match package.json version ${RELEASE_VERSION}" >&2
+            echo "VSIX version ${packaged} does not match the planned version ${RELEASE_VERSION}" >&2
             exit 1
           fi
           echo "path=${files[0]}" >> "$GITHUB_OUTPUT"
 
+      - name: Adopt bumped manifest and changelog
+        if: needs.build.outputs.bumped == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp release-source/package.json release-source/package-lock.json release-source/CHANGELOG.md .
+
       - name: Extract release notes from CHANGELOG.md
         shell: bash
         run: node .github/scripts/extract-release-notes.mjs "$RELEASE_VERSION" dist/RELEASE_NOTES.md
+
+      # Committed before publishing, so a bump that cannot land (for example a main
+      # protected against direct pushes) fails loudly instead of leaving the
+      # Marketplace ahead of main.
+      - name: Commit the version bump to main
+        if: needs.build.outputs.bumped == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): ${RELEASE_TAG} [skip ci]"
+          git push origin "HEAD:main"
+
+      - name: Resolve release target commit
+        id: target
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # Step-level `if` conditions cannot read the `env` context, so credentials are
       # probed here and exposed as an output instead.
@@ -165,12 +341,13 @@ jobs:
         if: steps.targets.outputs.open_vsx == 'true'
         run: npm exec -- ovsx publish --skip-duplicate "${{ steps.vsix.outputs.path }}"
 
-      # Creates the v<version> tag on this commit and the GitHub Release with the VSIX attached.
+      # The tag is created only after a successful publish, so a failed release leaves
+      # main carrying an untagged version that the next run publishes as-is.
       - name: Create tag and GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build.outputs.tag }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ steps.target.outputs.sha }}
           name: ${{ needs.build.outputs.tag }}
           body_path: dist/RELEASE_NOTES.md
           generate_release_notes: true
@@ -185,5 +362,6 @@ jobs:
             echo "- VSIX: \`${{ steps.vsix.outputs.path }}\`"
             echo "- VS Code Marketplace: ${{ steps.targets.outputs.vscode_marketplace == 'true' && 'published' || 'skipped' }}"
             echo "- Open VSX: ${{ steps.targets.outputs.open_vsx == 'true' && 'published' || 'skipped' }}"
+            echo "- Tag: \`${RELEASE_TAG}\` at \`${{ steps.target.outputs.sha }}\`"
             echo "- Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
           } >> "$GITHUB_STEP_SUMMARY"

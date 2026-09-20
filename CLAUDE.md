@@ -15,7 +15,7 @@ Node >= 24 is required (see `.nvmrc`); no bundler is used, `tsc` compiles `src/`
 - `npm run compile` — clean `out/` and run `tsc -p ./` (what `vscode:prepublish` runs before packaging)
 - `npm run watch` — same as compile but in `tsc -watch` mode
 - `npm run lint` — `oxlint` (config: `.oxlintrc.json`)
-- `npm run format` / `npm run format:check` — `oxfmt` over `src/` (tabs, single quotes — see `.oxfmtrc.json`)
+- `npm run format` / `npm run format:check` — `oxfmt` over `src/` (tabs, single quotes — see `.oxfmtrc.json`; `.gitattributes` pins LF checkouts because oxfmt rejects CRLF)
 - `npm test` — compiles `tests/` (via `tests/tsconfig.json`) then runs the offline suite in `tests/unit/`
 - `npm run test:live` — the network integration test in `tests/live/` (needs real credentials; not run by CI)
 - `npm run package` — `vsce package -o dist/` produces the installable `.vsix`
@@ -26,7 +26,18 @@ CI (`.github/workflows/ci.yml`) runs lint, format:check, compile, `npm test`, an
 
 ### Releasing
 
-Releases are version-driven: when a push to `main` passes the `build` job and `package.json`'s version has no `v<version>` tag yet, the `release` job (GitHub environment `production`) publishes the *same* VSIX artifact to the VS Code Marketplace (`VSCE_PAT`) and Open VSX (`OVSX_PAT`, skipped with a warning when unset), then creates the tag and a GitHub Release whose body is the matching `## [<version>]` section of `CHANGELOG.md`. So to ship: bump `version` in `package.json` (and `package-lock.json` via `npm install --package-lock-only`), add the `## [<version>] - <date>` CHANGELOG section, merge to `main`. Pushing to `main` without a version bump only runs the checks. Repository variables `PUBLISH_VSCODE_MARKETPLACE` / `PUBLISH_OPEN_VSX` set to `false` disable a target; `.github/workflows/rescue.yml` (`workflow_dispatch`) re-publishes any ref by hand if the automatic release failed part-way. It refuses to re-point an existing tag at a different commit — bump the version instead.
+Releasing is fully automatic — nobody edits a version number. `ci.yml` runs on every push to `main` and on `workflow_dispatch`; once lint/format/compile/test are green, the `build` job's **Plan release** step decides what to publish:
+
+- **Only the newest push to main publishes.** The plan refetches `origin/main` and stands down when `github.sha` is behind the tip, and the workflow-level concurrency group serializes runs per ref, so a queued run can never race an in-flight bump.
+- **Version choice.** If `package.json`'s version has no `v<version>` tag yet, that version is published as-is (this keeps a hand-written bump in a PR meaningful). If it was already released, the version is bumped (`npm version … --no-git-tag-version`, plus a generated `## [<version>]` CHANGELOG section from the commit subjects since the previous tag) so that every merged change ships. So merging a fix to `main` publishes a new patch version with no further action.
+- **Skips.** Pull requests never publish; pushes that touch only documentation/CI paths (`*.md`, `docs/**`, `.github/**`, `.vscode/**`, `LICENSE`, `.gitignore`, `.gitattributes`, `.nvmrc`, `.ox*.json`) are built but not released; a `chore(release):` commit on HEAD is ignored as a loop guard. A `::notice::` in the log always states which branch of this decision was taken.
+- **On-demand.** Running the workflow manually (on `main`) forces a release; the `bump` input selects `auto` (default), `patch`, `minor`, `major`, or `none` (build only).
+
+The `release` job (GitHub environment `production`) reuses the VSIX the `build` job produced — it is never rebuilt — and verifies the version inside the package matches the plan before doing anything. Then it: adopts the bumped `package.json`/`package-lock.json`/`CHANGELOG.md` (shipped over as an artifact, so the released tree matches the published VSIX byte for byte), commits them to `main` as `chore(release): v<version> [skip ci]` **before** publishing (so a push that cannot land, e.g. a protected `main`, fails loudly instead of leaving the Marketplace ahead of the repository), publishes to the VS Code Marketplace (`VSCE_PAT`) and Open VSX (`OVSX_PAT`, warns and skips when unset), and finally, only after a successful publish, creates the tag plus a GitHub Release whose body is the matching `## [<version>]` CHANGELOG section.
+
+A failed publish therefore leaves `main` holding an untagged version that the next run simply publishes as-is — no manual repair, no double bump. Repository variables `PUBLISH_VSCODE_MARKETPLACE` / `PUBLISH_OPEN_VSX` set to `false` disable a target; a `VSCE_PAT` that is missing or lacks Marketplace scope fails the run explicitly. `.github/workflows/rescue.yml` (`workflow_dispatch`) republishes any ref by hand when a release failed part-way; it refuses to re-point an existing tag at a different commit — bump the version instead.
+
+Note the bump commit is pushed with the default `GITHUB_TOKEN`, and GitHub never starts workflow runs for pushes made with that token, which is what keeps the automation loop-free; the `[skip ci]` marker is a second guard for when someone pushes such a commit with a personal token.
 
 ### Tests
 

@@ -1,0 +1,15 @@
+# The repository stores text files with LF endings only, and `npm run format:check`
+# (an oxfmt gate that CI enforces) rejects CRLF. Without this file a Windows clone
+# with core.autocrlf=true checks every file out as CRLF, so format:check fails locally
+# on files the developer never touched.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.vsix binary
+*.woff binary
+*.woff2 binary

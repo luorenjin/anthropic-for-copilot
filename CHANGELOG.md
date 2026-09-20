@@ -7,7 +7,8 @@ All notable changes to the `anthropic-for-copilot` extension will be documented 
 ## [1.1.1] - 2026-09-20
 
 ### Changed
-- **Automated releases**: CI now publishes to the VS Code Marketplace and Open VSX, tags the commit, and creates a GitHub Release with the VSIX attached whenever a version bump lands on `main` and the build is green. release-please has been removed.
+- **Fully automatic releases**: nobody has to touch a version number any more. When a change lands on `main` and the build is green, CI picks the version itself — the current one when it was never released, otherwise a patch bump — generates the `CHANGELOG.md` section from the merged commits, publishes the VSIX to the VS Code Marketplace and Open VSX, and only then creates the `v<version>` tag and the GitHub Release. Documentation/CI-only pushes are not released, and a manual workflow run can request an explicit `patch` / `minor` / `major` bump.
+- **Line endings pinned to LF**: added `.gitattributes` so a Windows checkout no longer fails `npm run format:check` (an oxfmt CI gate) on files that were never edited.
 
 ### Fixed
 - **CI build**: Removed an unused import and dead diagnostics helper that made `npm run lint` (and therefore CI) fail.

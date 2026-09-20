@@ -26,6 +26,7 @@ CLAUDE.md
 .claude/**
 .remember/**
 .superpowers/**
+.gitattributes
 tests/**
 out/tests/**
 out/src/**
