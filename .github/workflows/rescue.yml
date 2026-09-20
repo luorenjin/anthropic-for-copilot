@@ -1,8 +1,10 @@
 name: Rescue Publish
 
 # Manual fallback for when the automatic release in ci.yml failed part-way
-# (e.g. Marketplace outage, expired PAT). Re-publishes the given git ref at whatever
-# version its package.json already carries — it never bumps the version itself.
+# (e.g. Marketplace outage, expired PAT), or for catching up a target that ci.yml
+# skipped because its token was not configured yet. Re-publishes the given git ref
+# at whatever version its package.json already carries — it never bumps the version
+# itself.
 on:
   workflow_dispatch:
     inputs:
@@ -104,8 +106,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${VSCE_PAT}" ]; then
-            echo "::error::VSCE_PAT secret is not configured (repository or 'production' environment)."
-            exit 1
+            echo "::warning::VSCE_PAT is not configured (repository secret or a secret of the 'production' environment); skipping the VS Code Marketplace publish."
+            exit 0
           fi
           npm exec -- vsce publish --packagePath "${{ steps.vsix.outputs.path }}" --skip-duplicate
 
@@ -115,8 +117,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${OVSX_PAT}" ]; then
-            echo "::error::OVSX_PAT secret is not configured (repository or 'production' environment)."
-            exit 1
+            echo "::warning::OVSX_PAT is not configured (repository secret or a secret of the 'production' environment); skipping the Open VSX publish."
+            exit 0
           fi
           npm exec -- ovsx publish --skip-duplicate "${{ steps.vsix.outputs.path }}"
 

@@ -308,30 +308,36 @@ jobs:
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # Step-level `if` conditions cannot read the `env` context, so credentials are
-      # probed here and exposed as an output instead.
+      # probed here and exposed as an output instead. A token that is not configured
+      # skips its target with a warning instead of failing the job, so a push to main
+      # still produces the tag and the GitHub Release (with the packaged VSIX
+      # attached); the skipped target can be caught up later with rescue.yml, which
+      # publishes whatever version a ref already carries.
       - name: Resolve publish targets
         id: targets
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ "${{ vars.PUBLISH_VSCODE_MARKETPLACE }}" = "false" ]; then
+          skipped=""
+
+          if [ -z "${VSCE_PAT}" ]; then
+            echo "::warning::VSCE_PAT is not configured (repository secret or a secret of the 'production' environment); the VS Code Marketplace publish is skipped. Run 'Rescue Publish' with ref ${RELEASE_TAG} once the token exists."
             echo "vscode_marketplace=false" >> "$GITHUB_OUTPUT"
-          elif [ -z "${VSCE_PAT}" ]; then
-            echo "::error::VSCE_PAT secret is not configured (repository or 'production' environment)." >&2
-            exit 1
+            skipped="VS Code Marketplace"
           else
             echo "vscode_marketplace=true" >> "$GITHUB_OUTPUT"
           fi
 
-          if [ "${{ vars.PUBLISH_OPEN_VSX }}" = "false" ]; then
+          if [ -z "${OVSX_PAT}" ]; then
+            echo "::warning::OVSX_PAT is not configured; the Open VSX publish is skipped. Run 'Rescue Publish' with ref ${RELEASE_TAG} once the token exists."
             echo "open_vsx=false" >> "$GITHUB_OUTPUT"
-          elif [ -z "${OVSX_PAT}" ]; then
-            echo "::warning::OVSX_PAT secret is not configured; Open VSX publish will be skipped."
-            echo "open_vsx=false" >> "$GITHUB_OUTPUT"
+            skipped="${skipped:+${skipped}, }Open VSX"
           else
             echo "open_vsx=true" >> "$GITHUB_OUTPUT"
           fi
+
+          echo "skipped=${skipped}" >> "$GITHUB_OUTPUT"
 
       - name: Publish to VS Code Marketplace
         if: steps.targets.outputs.vscode_marketplace == 'true'
@@ -341,8 +347,10 @@ jobs:
         if: steps.targets.outputs.open_vsx == 'true'
         run: npm exec -- ovsx publish --skip-duplicate "${{ steps.vsix.outputs.path }}"
 
-      # The tag is created only after a successful publish, so a failed release leaves
-      # main carrying an untagged version that the next run publishes as-is.
+      # The tag is created only once the publish steps have run and none of them
+      # failed (a target that is skipped for want of a token is not a failure), so a
+      # failed release leaves main carrying an untagged version that the next run
+      # publishes as-is.
       - name: Create tag and GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -364,4 +372,9 @@ jobs:
             echo "- Open VSX: ${{ steps.targets.outputs.open_vsx == 'true' && 'published' || 'skipped' }}"
             echo "- Tag: \`${RELEASE_TAG}\` at \`${{ steps.target.outputs.sha }}\`"
             echo "- Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
+            if [ -n "${{ steps.targets.outputs.skipped }}" ]; then
+              echo
+              echo "> Skipped: ${{ steps.targets.outputs.skipped }} — the token is not configured."
+              echo "> Add it under **Settings → Secrets and variables → Actions** (repository scope, or the \`production\` environment), then run the **Rescue Publish** workflow with \`ref: ${RELEASE_TAG}\` to catch up."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

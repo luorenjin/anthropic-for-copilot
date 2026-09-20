@@ -7,7 +7,8 @@ All notable changes to the `anthropic-for-copilot` extension will be documented 
 ## [1.1.1] - 2026-09-20
 
 ### Changed
-- **Fully automatic releases**: nobody has to touch a version number any more. When a change lands on `main` and the build is green, CI picks the version itself — the current one when it was never released, otherwise a patch bump — generates the `CHANGELOG.md` section from the merged commits, publishes the VSIX to the VS Code Marketplace and Open VSX, and only then creates the `v<version>` tag and the GitHub Release. Documentation/CI-only pushes are not released, and a manual workflow run can request an explicit `patch` / `minor` / `major` bump.
+- **Fully automatic releases**: nobody has to touch a version number any more. When a change lands on `main` and the build is green, CI picks the version itself — the current one when it was never released, otherwise a patch bump — generates the `CHANGELOG.md` section from the merged commits, publishes the VSIX to the VS Code Marketplace and Open VSX, and then creates the `v<version>` tag plus a GitHub Release carrying the packaged `.vsix` as an asset. Documentation/CI-only pushes are not released, and a manual workflow run can request an explicit `patch` / `minor` / `major` bump.
+- **A publishing token that is not configured yet no longer blocks the release**: the target is skipped with a warning and a note in the run summary, so a green push always yields the tag and the GitHub Release; add the token later and catch the target up with the *Rescue Publish* workflow. A token that *is* configured but cannot publish still fails the run.
 - **Line endings pinned to LF**: added `.gitattributes` so a Windows checkout no longer fails `npm run format:check` (an oxfmt CI gate) on files that were never edited.
 
 ### Fixed
