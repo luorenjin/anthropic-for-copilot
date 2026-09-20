@@ -1,6 +1,6 @@
 # Contact the Maintainer / 联系维护者
 
-Email: **anthropic-copilot@proton.me**
+Email: **luorenjin@126.com**
 
 Use this address for project-related matters that are better handled privately, including:<br>以下事项如不适合通过公开 Issue 讨论，可以通过邮件联系：
 
